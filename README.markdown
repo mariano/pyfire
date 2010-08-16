@@ -7,7 +7,7 @@ of the [Campfire API] [api] in Python.
 
 ### Sending a message to a room ###
 
-This example shows us how to join, a room, ask the user for a message,
+This example shows us how to join a room, ask the user for a message,
 post that message in the room, and then leave the room.
 
 	import pyfire
@@ -22,10 +22,10 @@ post that message in the room, and then leave the room.
 
 ### Streaming a room ###
 
-This example shows us how to print out the messages in a room.
-Notice that this process will be listening for messages until you
-finish the process (by pressing ENTER). Also notice how it is not 
-necesarry to join the room in order to listen to messages.
+This example shows us how to print out messages sent, or being sent, to a room.
+Notice that this process will be listening for messages until you finish the 
+process (by pressing ENTER). Also notice how it is not necessary to join the 
+room in order to listen to messages.
 
 	import pyfire
 
