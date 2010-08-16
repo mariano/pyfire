@@ -77,10 +77,21 @@ class Room(CampfireEntity):
 		return self._connection.post("room/%s/unlock" % self.id)["success"]
 
 	def get_stream(self):
-		""" Get room stream to listen for messages
+		""" Get room stream to listen for messages.
 
 		Returns:
 			:class:`Stream`. Stream
 		"""
 
 		return Stream(self)
+
+	def set_name(name):
+		""" Set the room name.
+
+		Args:
+			name (str): Name
+
+		Returns:
+			bool. Success
+		"""
+		return self._connection.put("room/%s" % self.id)["success"]
