@@ -30,9 +30,9 @@ class Message(CampfireEntity):
 		self.room = None
 
 		if "user_id" in data and data["user_id"]:
-			self.user = campfire.get_user(data["user_id"])
+			self.user = self._campfire.get_user(data["user_id"])
 		if "room_id" in data and data["room_id"]:
-			self.room = campfire.get_room(data["room_id"])
+			self.room = self._campfire.get_room(data["room_id"])
 
 	def is_joining(self):
 		""" Tells if this message is a room join message.
@@ -73,3 +73,22 @@ class Message(CampfireEntity):
 			self._TYPE_TEXT,
 			self._TYPE_TWEET
 		]
+
+	def highlight(self):
+		""" Highlights a message.
+
+		Returns:
+			bool. Success
+		"""
+		return self._connection.post("messages/%s/star" % self.id)["success"]
+
+	def remove_highlight(self):
+		""" Removes the highlight of a message.
+
+		Returns:
+			bool. Success
+		"""
+
+		return self._connection.delete("messages/%s/star" % self.id)["success"]
+
+
