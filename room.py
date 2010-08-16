@@ -27,7 +27,7 @@ class Room(CampfireEntity):
 		"""
 
 		campfire = self.get_campfire()
-		if type(message) != Message:
+		if not isinstance(message, Message):
 			message = Message(campfire, message)
 
 		result = self._connection.post(
