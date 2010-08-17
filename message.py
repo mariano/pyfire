@@ -1,3 +1,4 @@
+import re
 import types
 from .entity import CampfireEntity
 
@@ -38,6 +39,18 @@ class Message(CampfireEntity):
 			self.room = self._campfire.get_room(data["room_id"])
 			if self.is_upload():
 				self.upload = self._connection.get("room/%s/messages/%s/upload" % (self.room.id, self.id), key="upload")
+				if "full_url" in self.upload:
+					self.upload["url"] = self.upload["full_url"]
+					del self.upload["full_url"]
+
+		if self.is_tweet():
+			matches = re.match("(.+)\s+--\s+@([^,]+),\s*(.+)$", self.body)
+			if matches:
+				self.tweet = {
+					"tweet": matches.group(1),
+					"user": matches.group(2),
+					"url": matches.group(3)
+				}
 
 	def is_joining(self):
 		""" Tells if this message is a room join message.
@@ -88,7 +101,6 @@ class Message(CampfireEntity):
 
 		return self.type == self._TYPE_TIMESTAMP
 
-
 	def is_topic_change(self):
 		""" Tells if this message is a topic change.
 
@@ -97,6 +109,15 @@ class Message(CampfireEntity):
 		"""
 
 		return self.type == self._TYPE_TOPIC_CHANGE
+
+	def is_tweet(self):
+		""" Tells if this message is a tweet.
+
+		Returns:
+			bool. Success
+		"""
+
+		return self.type == self._TYPE_TWEET
 
 	def is_upload(self):
 		""" Tells if this message is an upload message.

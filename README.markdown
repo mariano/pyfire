@@ -40,6 +40,8 @@ room in order to listen to messages.
 				print "--> %s ENTERS THE ROOM" % user
 			elif message.is_leaving():
 				print "<-- %s LEFT THE ROOM" % user
+			elif message.is_tweet():
+				print "[%s] %s TWEETED '%s' - %s" % (user, message.tweet["user"], message.tweet["tweet"], message.tweet["url"])
 			elif message.is_text():
 				print "[%s] %s" % (user, message.body)
 			elif message.is_upload():
