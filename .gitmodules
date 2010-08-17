@@ -1,0 +1,3 @@
+[submodule "poster"]
+	path = poster
+	url = git://github.com/mariano/poster.git

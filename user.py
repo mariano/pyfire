@@ -13,7 +13,6 @@ class User(CampfireEntity):
 		Kwargs:
 			current (bool): Wether user is current user, or not
    		"""
-
 		super(User, self).__init__(campfire)
 		self.set_data(self._connection.get("users/%s" % id, key="user"))
 		self.current = current

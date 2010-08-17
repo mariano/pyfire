@@ -7,7 +7,6 @@ class Entity(object):
 		Kwargs:
 			data (dict): Data
 		"""
-
 		self.set_data(data)
 
 	def __getattr__(self, name):
@@ -23,7 +22,6 @@ class Entity(object):
 		Raises:
 			AttributeError
 		"""
-		
 		if name in self._data:
 			return self._data[name]
 		raise AttributeError("No property named %s" % name)
@@ -34,7 +32,6 @@ class Entity(object):
 		Returns:
 			dict. Data
 		"""
-
 		return self._data
 
 	def set_data(self, data={}):
@@ -43,7 +40,6 @@ class Entity(object):
 		Args:
 			data (dict): Entity data
 		"""
-
 		self._data = data
 
 class CampfireEntity(Entity):
@@ -58,7 +54,6 @@ class CampfireEntity(Entity):
 		Kwargs:
 			data (dict): Entity data
 		"""
-
 		super(CampfireEntity, self).__init__(data)
 		self._campfire = campfire
 		self._connection = None
@@ -71,7 +66,6 @@ class CampfireEntity(Entity):
 		Returns:
 			:class:`Campfire`. Campfire instance
 		"""
-
 		return self._campfire
 
 	def get_connection(self):
@@ -80,5 +74,4 @@ class CampfireEntity(Entity):
 		Returns:
 			:class:`Connection`. Connection
 		"""
-
 		return self._connection

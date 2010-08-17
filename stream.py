@@ -1,7 +1,9 @@
 import time
+
 from threading import Thread
 from multiprocessing import Process, Queue
 from Queue import Empty
+
 from .connection import Connection
 from .message import Message
 
@@ -21,7 +23,6 @@ class Stream(Thread):
 		Raises:
 			AssertionError
 		"""
-
 		assert pause > 0, 'A pause of at least 1 second is needed'
 
 		Thread.__init__(self)
@@ -43,7 +44,6 @@ class Stream(Thread):
 		Returns:
 			:class:`Stream`. Current instance to allow chaining
 		"""
-
 		if not observer in self._observers:
 			self._observers.append(observer)
 		return self
@@ -57,7 +57,6 @@ class Stream(Thread):
 		Returns:
 			:class:`Stream`. Current instance to allow chaining
 		"""
-
 		try:
 			self._observers.remove(observer)
 		except ValueError:
@@ -70,7 +69,6 @@ class Stream(Thread):
 		Args:
 			message (:class:`Message`): Incoming message
 		"""
-
 		for observer in self._observers:
 			observer(message)
 
@@ -82,7 +80,6 @@ class Stream(Thread):
 		Returns:
 			:class:`Stream`. Current instance to allow chaining
 		"""
-
 		self._abort = True
 		return self
 	
@@ -93,7 +90,6 @@ class Stream(Thread):
 
 		To stop, call stop(), and then join()
 		"""
-
 		self._abort = False
 		campfire = self._room.get_campfire()
 		process = StreamProcess(campfire.get_connection().get_settings(), self._room.id, pause=self._pause)
@@ -134,7 +130,6 @@ class StreamProcess(Process):
 			queue (:class:`multiprocessing.Queue`): A queue to share data between processes
 			pause (int): Pause in seconds between requests
 		"""
-
 		Process.__init__(self)
 		self._pause = pause
 		self._room_id = room_id
@@ -148,7 +143,6 @@ class StreamProcess(Process):
 		Args:
 			queue (:class:`multiprocessing.Queue`): Queue to share data between processes
 		"""
-
 		self._queue = queue
 
 	def run(self):
@@ -159,7 +153,6 @@ class StreamProcess(Process):
 
 		To stop, call terminate()
 		"""
-
 		if not self._queue:
 			raise Exception("No queue available to send messages")
 
@@ -175,7 +168,6 @@ class StreamProcess(Process):
 		Returns:
 			tuple. List of messages
 		"""
-
 		try:
 			if not self._last_message_id:
 				messages = self._connection.get("room/%s/transcript" % self._room_id, key="messages")

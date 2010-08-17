@@ -6,8 +6,7 @@ class RoomNotFoundException(Exception):
 	pass
 
 class Campfire(object):
-	""" Campfire API
-	"""
+	""" Campfire API """
 	
 	def __init__(self, subdomain, user, password, ssl=False):
 		""" Initialize.
@@ -20,7 +19,6 @@ class Campfire(object):
 		Kwargs:
 			ssl (bool): enabled status of SSL
 		"""
-
 		self.base_url = "http%s://%s.campfirenow.com" % ("s" if ssl else "", subdomain)
 		self._settings = {
 			"user": user,
@@ -43,7 +41,6 @@ class Campfire(object):
 		Returns:
 			:class:`Connection`. Connection
 		"""
-
 		return self._connection
 	
 	def get_rooms(self):
@@ -85,7 +82,6 @@ class Campfire(object):
 		Returns:
 			:class:`User`. User
 		"""
-
 		if not id:
 			id = self._user.id
 

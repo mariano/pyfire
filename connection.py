@@ -1,10 +1,13 @@
 import cookielib
 import copy
+import httplib
 import json
 import string
 import types
 import urllib
 import urllib2
+
+from . import poster
 
 class ConnectionError(Exception):
 	pass
@@ -45,7 +48,7 @@ class RESTRequest(urllib2.Request, object):
 class Connection(object):
 	""" A connection to the Campfire API """
 	
-	def __init__(self, url=None, base_url=None, user=None, password=None, debug=False):
+	def __init__(self, url=None, base_url=None, user=None, password=None, authorizations={}, debug=False):
 		""" Initialize.
 
 		Kwargs:
@@ -53,6 +56,7 @@ class Connection(object):
 			base_url (str): If url is not provided, base_url is the base URL (e.g: mysite.campfirenow.com)
 			user (str): The user for basic auth
 			password (str): The password for basic auth
+			authorizations (dict): Authorization header to send, indexed by URL
 			debug (bool): wether to set debug ON or OFF
 		"""
 		self._settings = {
@@ -60,27 +64,9 @@ class Connection(object):
 			"base_url": base_url,
 			"user": user,
 			"password": password,
+			"authorizations": authorizations or {},
 			"debug": debug
 		}
-
-		handlers = [
-			urllib2.HTTPSHandler(debuglevel=int(self._settings["debug"])),
-			urllib2.HTTPCookieProcessor(cookielib.CookieJar())
-		]
-
-		if self._settings["user"]:
-			pwd_manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
-			password_url = None
-			if url:
-				password_url = url
-			elif base_url:
-				password_url = base_url
-			if password_url:
-				pwd_manager.add_password(None, password_url, self._settings["user"], self._settings["password"])
-
-			handlers.append(urllib2.HTTPBasicAuthHandler(pwd_manager))
-
-		self._opener = urllib2.build_opener(*handlers)
 
 	@staticmethod
 	def create_from_settings(settings):
@@ -97,16 +83,45 @@ class Connection(object):
 			settings["base_url"],
 			settings["user"],
 			settings["password"],
-			settings["debug"]
+			authorizations = settings["authorizations"],
+			debug = settings["debug"]
 		)
 
 	def get_settings(self):
-		""" Get settings
+		""" Get settings.
 
 		Returns:
 			dict. Settings
 		"""
 		return self._settings
+
+	def get_setting(self, name):
+		""" Get a setting value.
+
+		Args:
+			name (str): Setting name
+
+		Returns:
+			Value
+		"""
+		return self._settings[name]
+
+	def set_setting(self, name, value):
+		""" Set a setting value.
+
+		Args:
+			name (str): Setting name
+			value: Setting value
+		"""
+		self._settings["name"] = value
+
+	def set_debug(self, debug):
+		""" Enable/disable debug
+
+		Args:
+			bool. Debug
+		"""
+		self._settings["debug"] = debug
 
 	def delete(self, url=None, post_data={}, parse_data=False, key=None, parameters=None):
 		""" Issue a PUT request.
@@ -124,8 +139,7 @@ class Connection(object):
 		Raises:
 			AuthenticationError, ConnectionError, urllib2.HTTPError, ValueError, Exception
 		"""
-
-		return self.post(method="DELETE", url=url, post_data=post_data, parse_data=parse_data, key=key, parameters=parameters)
+		return self._fetch("DELETE", url, post_data=post_data, parse_data=parse_data, key=key, parameters=parameters, full_return=True)
 
 	def put(self, url=None, post_data={}, parse_data=False, key=None, parameters=None):
 		""" Issue a PUT request.
@@ -143,10 +157,9 @@ class Connection(object):
 		Raises:
 			AuthenticationError, ConnectionError, urllib2.HTTPError, ValueError, Exception
 		"""
+		return self._fetch("PUT", url, post_data=post_data, parse_data=parse_data, key=key, parameters=parameters, full_return=True)
 
-		return self.post(method="PUT", url=url, post_data=post_data, parse_data=parse_data, key=key, parameters=parameters)
-
-	def post(self, url=None, post_data={}, parse_data=False, key=None, parameters=None, method="POST"):
+	def post(self, url=None, post_data={}, parse_data=False, key=None, parameters=None):
 		""" Issue a POST request.
 
 		Kwargs:
@@ -162,9 +175,7 @@ class Connection(object):
 		Raises:
 			AuthenticationError, ConnectionError, urllib2.HTTPError, ValueError, Exception
 		"""
-
-		post_data = json.dumps(post_data) if type(post_data) != types.StringType else post_data
-		return self._fetch(method, url=url, post_data=post_data, parse_data=parse_data, key=key, parameters=parameters, full_return=True)
+		return self._fetch("POST", url, post_data=post_data, parse_data=parse_data, key=key, parameters=parameters, full_return=True)
 
 	def get(self, url=None, parse_data=True, key=None, parameters=None):
 		""" Issue a GET request.
@@ -181,14 +192,15 @@ class Connection(object):
 		Raises:
 			AuthenticationError, ConnectionError, urllib2.HTTPError, ValueError, Exception
 		"""
-
-		return self._fetch("GET", url=url, post_data=None, parse_data=parse_data, key=key, parameters=parameters)
+		return self._fetch("GET", url, post_data=None, parse_data=parse_data, key=key, parameters=parameters)
 			
-	def _fetch(self, method=None, url=None, post_data=None, parse_data=True, key=None, parameters=None, full_return=False):
+	def _fetch(self, method, url=None, post_data=None, parse_data=True, key=None, parameters=None, full_return=False):
 		""" Issue a request.
 
-		Kwargs:
+		Args:
 			method (str): Request method (GET/POST/PUT/DELETE/etc.) If not specified, it will be POST if post_data is not None
+
+		Kwargs:
 			url (str): Destination URL
 			post_data (str): A string of what to POST
 			parse_data (bool): If true, parse response data
@@ -202,6 +214,12 @@ class Connection(object):
 		Raises:
 			AuthenticationError, ConnectionError, urllib2.HTTPError, ValueError, Exception
 		"""
+		has_file = False
+		if post_data is not None and isinstance(post_data, dict):
+			for key in post_data:
+				if hasattr(post_data[key], "read"):
+					has_file = True
+					break
 
 		uri = url or self._settings["url"]
 		if url and self._settings["base_url"]:
@@ -211,18 +229,67 @@ class Connection(object):
 			uri += "?%s" % urllib.urlencode(parameters)
 
 		headers = {
-			"User-Agent": "kFlame 1.0",
-			"Content-Type": "application/json"
+			"User-Agent": "kFlame 1.0"
 		}
+
+		if not has_file:
+			headers["Content-Type"] = "application/json"
+
+		handlers = []
+		debuglevel = int(self._settings["debug"])
+	
+		if has_file:
+			handlers.append(poster.streaminghttp.StreamingHTTPHandler(debuglevel=debuglevel))
+			handlers.append(poster.streaminghttp.StreamingHTTPRedirectHandler())
+			if hasattr(httplib, "HTTPS"):
+				handlers.append(poster.streaminghttp.StreamingHTTPSHandler(debuglevel=debuglevel))
+		else:
+			handlers.append(urllib2.HTTPHandler(debuglevel=debuglevel))
+			if hasattr(httplib, "HTTPS"):
+				handlers.append(urllib2.HTTPSHandler(debuglevel=debuglevel))
+
+		handlers.append(urllib2.HTTPCookieProcessor(cookielib.CookieJar()))
+
+		password_url = None
+		if self._settings["user"] or self._settings["authorizations"]:
+			pwd_manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
+			password_url = None
+			if self._settings["url"]:
+				password_url = self._settings["url"]
+			elif self._settings["base_url"]:
+				password_url = self._settings["base_url"]
+
+			if password_url and (self._settings["user"] or password_url in self._settings["authorizations"]):
+				pwd_manager.add_password(None, password_url, self._settings["user"], self._settings["password"])
+
+				if password_url in self._settings["authorizations"]:
+					headers["Authorization"] = self._settings["authorizations"][password_url]
+				else:
+					if has_file:
+						handlers.append(poster.streaminghttp.StreamingHTTPBasicAuthHandler(pwd_manager))
+					else:
+						handlers.append(urllib2.HTTPBasicAuthHandler(pwd_manager))
+
+		opener = urllib2.build_opener(*handlers)
+
+		if post_data is not None:
+			if has_file:
+				post_data, file_headers = poster.encode.multipart_encode(post_data)
+				headers.update(file_headers)
+			elif isinstance(post_data, dict):
+				post_data = json.dumps(post_data)
 
 		request = RESTRequest(uri, method=method, headers=headers)
 		if post_data is not None:
 			request.add_data(post_data)
-		response=None
+
+		response = None
 
 		try:
-			response = self._opener.open(request)
+			response = opener.open(request)
 			body = response.read()
+			if password_url and password_url not in self._settings["authorizations"] and request.has_header("Authorization"):
+				self._settings["authorizations"][password_url] = request.get_header("Authorization")
 		except urllib2.HTTPError as e:
 			if e.code == 401:
 				raise AuthenticationError("Access denied while trying to access %s" % uri)
@@ -235,7 +302,8 @@ class Connection(object):
 		finally:
 			if response:
 				response.close()
-			self._opener.close()
+
+			opener.close()
 
 		data = None
 		if parse_data:

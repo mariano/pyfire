@@ -22,7 +22,6 @@ class Message(CampfireEntity):
 			campfire (:class:`Campfire`): Campfire instance
 			data (dict or str): If string, message type will be set to either paste or text
 		"""
-
 		if type(data) == types.StringType:
 			data = {
 				"type": self._TYPE_PASTE if data.find("\n") >= 0 else self._TYPE_TEXT,
@@ -58,7 +57,6 @@ class Message(CampfireEntity):
 		Returns:
 			bool. Success
 		"""
-
 		return self.type == self._TYPE_ENTER
 
 	def is_leaving(self):
@@ -67,7 +65,6 @@ class Message(CampfireEntity):
 		Returns:
 			bool. Success
 		"""
-
 		return self.type == self._TYPE_LEAVE
 
 	def is_paste(self):
@@ -76,7 +73,6 @@ class Message(CampfireEntity):
 		Returns:
 			bool. Success
 		"""
-
 		return self.type == self._TYPE_PASTE
 
 	def is_text(self):
@@ -85,7 +81,6 @@ class Message(CampfireEntity):
 		Returns:
 			bool. Success
 		"""
-
 		return self.type in [
 			self._TYPE_PASTE,
 			self._TYPE_TEXT,
@@ -98,7 +93,6 @@ class Message(CampfireEntity):
 		Returns:
 			bool. Success
 		"""
-
 		return self.type == self._TYPE_TIMESTAMP
 
 	def is_topic_change(self):
@@ -107,7 +101,6 @@ class Message(CampfireEntity):
 		Returns:
 			bool. Success
 		"""
-
 		return self.type == self._TYPE_TOPIC_CHANGE
 
 	def is_tweet(self):
@@ -116,7 +109,6 @@ class Message(CampfireEntity):
 		Returns:
 			bool. Success
 		"""
-
 		return self.type == self._TYPE_TWEET
 
 	def is_upload(self):
@@ -125,7 +117,6 @@ class Message(CampfireEntity):
 		Returns:
 			bool. Success
 		"""
-
 		return self.type == self._TYPE_UPLOAD
 
 	def highlight(self):
@@ -142,5 +133,4 @@ class Message(CampfireEntity):
 		Returns:
 			bool. Success
 		"""
-
 		return self._connection.delete("messages/%s/star" % self.id)["success"]
