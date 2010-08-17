@@ -15,5 +15,5 @@ class User(CampfireEntity):
    		"""
 
 		CampfireEntity.__init__(self, campfire)
-		self._data = self._connection.get("users/%s" % id, key="user")
+		self.set_data(self._connection.get("users/%s" % id, key="user"))
 		self.current = current

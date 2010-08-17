@@ -125,7 +125,7 @@ class Connection:
 			AuthenticationError, ConnectionError, urllib2.HTTPError, ValueError, Exception
 		"""
 
-		return self.put(method="DELETE", url=url, post_data=post_data, parse_data=parse_data, key=key, parameters=parameters)
+		return self.post(method="DELETE", url=url, post_data=post_data, parse_data=parse_data, key=key, parameters=parameters)
 
 	def put(self, url=None, post_data={}, parse_data=False, key=None, parameters=None):
 		""" Issue a PUT request.
@@ -144,7 +144,7 @@ class Connection:
 			AuthenticationError, ConnectionError, urllib2.HTTPError, ValueError, Exception
 		"""
 
-		return self.put(method="PUT", url=url, post_data=post_data, parse_data=parse_data, key=key, parameters=parameters)
+		return self.post(method="PUT", url=url, post_data=post_data, parse_data=parse_data, key=key, parameters=parameters)
 
 	def post(self, url=None, post_data={}, parse_data=False, key=None, parameters=None, method="POST"):
 		""" Issue a POST request.
@@ -164,7 +164,7 @@ class Connection:
 		"""
 
 		post_data = json.dumps(post_data) if type(post_data) != types.StringType else post_data
-		return self._fetch('POST', url=url, post_data=post_data, parse_data=parse_data, key=key, parameters=parameters, full_return=True)
+		return self._fetch(method, url=url, post_data=post_data, parse_data=parse_data, key=key, parameters=parameters, full_return=True)
 
 	def get(self, url=None, parse_data=True, key=None, parameters=None):
 		""" Issue a GET request.
@@ -182,7 +182,7 @@ class Connection:
 			AuthenticationError, ConnectionError, urllib2.HTTPError, ValueError, Exception
 		"""
 
-		return self._fetch('GET', url=url, post_data=None, parse_data=parse_data, key=key, parameters=parameters)
+		return self._fetch("GET", url=url, post_data=None, parse_data=parse_data, key=key, parameters=parameters)
 			
 	def _fetch(self, method=None, url=None, post_data=None, parse_data=True, key=None, parameters=None, full_return=False):
 		""" Issue a request.
@@ -242,7 +242,7 @@ class Connection:
 			try:
 				data = json.loads(body)
 			except ValueError as e:
-				raise ValueError("%s: Value: [%s]" % (e, body))
+				raise ValueError("%s in %s: Value: [%s]" % (e, uri, body))
 
 			if not key:
 				key = string.split(url, "/")[0]

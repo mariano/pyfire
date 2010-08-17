@@ -14,7 +14,10 @@ class Room(CampfireEntity):
 		"""
 
 		CampfireEntity.__init__(self, campfire)
-		self._data = self._connection.get("room/%s" % id)
+		self._load(id)
+
+	def _load(self, id=None):
+		self.set_data(self._connection.get("room/%s" % (id or self.id)))
 
 	def speak(self, message):
 		""" Post a message.
@@ -85,7 +88,7 @@ class Room(CampfireEntity):
 
 		return Stream(self)
 
-	def set_name(name):
+	def set_name(self, name):
 		""" Set the room name.
 
 		Args:
@@ -94,4 +97,27 @@ class Room(CampfireEntity):
 		Returns:
 			bool. Success
 		"""
-		return self._connection.put("room/%s" % self.id)["success"]
+
+		if not self._campfire.get_user().admin:
+			return False
+
+		result = self._connection.put("room/%s" % self.id, {"room": {"name": name}})
+		if result["success"]:
+			self._load()
+		return result["success"]
+
+	def set_topic(self, topic):
+		""" Set the room topic.
+
+		Args:
+			topic (str): Topic
+
+		Returns:
+			bool. Success
+		"""
+
+		result = self._connection.put("room/%s" % self.id, {"room": {"topic": topic}})
+		if result["success"]:
+			self._load()
+
+		return result["success"]

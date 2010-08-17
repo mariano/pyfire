@@ -90,5 +90,3 @@ class Message(CampfireEntity):
 		"""
 
 		return self._connection.delete("messages/%s/star" % self.id)["success"]
-
-
