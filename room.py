@@ -121,3 +121,10 @@ class Room(CampfireEntity):
 			self._load()
 
 		return result["success"]
+
+	def get_users(self):
+		self._load()
+		return self.users
+
+	def get_uploads(self):
+		return self._connection.get("room/%s/uploads" % self.id, key="uploads")
