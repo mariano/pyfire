@@ -12,14 +12,14 @@ class ConnectionError(Exception):
 class AuthenticationError(Exception):
 	pass
 
-class RESTRequest(urllib2.Request):
+class RESTRequest(urllib2.Request, object):
 	""" A request for :class:`Connection`.
 	
 	Allows specification of method for request, besides built-in POST and GET """
 
 	def __init__(self, url, method=None, data=None, headers={}, origin_req_host=None, unverifiable=False):
 		self.set_method(method)
-		urllib2.Request.__init__(self, url, 
+		super(RESTRequest, self).__init__(url, 
 			data=data,
 			headers=headers, 
 			origin_req_host=origin_req_host,
@@ -42,7 +42,7 @@ class RESTRequest(urllib2.Request):
 		"""
 		return self._method or urllib2.Request.get_method(self)
 
-class Connection:
+class Connection(object):
 	""" A connection to the Campfire API """
 	
 	def __init__(self, url=None, base_url=None, user=None, password=None, debug=False):

@@ -13,7 +13,7 @@ class Room(CampfireEntity):
 			password (str): Room ID
 		"""
 
-		CampfireEntity.__init__(self, campfire)
+		super(Room, self).__init__(campfire)
 		self._load(id)
 
 	def _load(self, id=None):

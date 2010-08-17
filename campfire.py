@@ -5,7 +5,7 @@ from .room import Room
 class RoomNotFoundException(Exception):
 	pass
 
-class Campfire:
+class Campfire(object):
 	""" Campfire API
 	"""
 	

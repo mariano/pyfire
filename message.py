@@ -25,7 +25,7 @@ class Message(CampfireEntity):
 				"body": data
 			}
 
-		CampfireEntity.__init__(self, campfire, data)
+		super(Message, self).__init__(campfire, data)
 		self.user = None
 		self.room = None
 

@@ -1,4 +1,4 @@
-class Entity:
+class Entity(object):
 	""" Dictionary based entity """
 	
 	def __init__(self, data={}):
@@ -59,7 +59,7 @@ class CampfireEntity(Entity):
 			data (dict): Entity data
 		"""
 
-		Entity.__init__(self, data)
+		super(CampfireEntity, self).__init__(data)
 		self._campfire = campfire
 		self._connection = None
 		if self._campfire:
