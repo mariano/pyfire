@@ -7,19 +7,19 @@ of the [Campfire API] [api] in Python.
 
 ### Requirements ###
 
-Pyfire requires Chris AtLee's poster package to be installed.
+Pyfire requires [Chris AtLee's poster package] [poster] to be installed.
 
-1. Download the latest package from http://atlee.ca/software/poster/#download
+1. Download the [latest poster package] [poster-download]
 2. Unzip the downloaded file, and run the following command from within the created directory:
 
-	$ python setup.py install
+		$ python setup.py install
 
 ### Installing ###
 
 1. Uncompress the pyfire package file.
 2. Unzip the downloaded file, and run the following command from within the created directory:
 
-	$ python setup.py install
+		$ python setup.py install
 
 ## Usage Examples ##
 
@@ -98,3 +98,5 @@ NOTE: It is not necessary to join a room to listen for messages.
 	stream.stop().join()
 
 [api]: http://developer.37signals.com/campfire
+[poster]:
+[poster-download]:
