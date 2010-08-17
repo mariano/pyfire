@@ -21,15 +21,10 @@
 """pyfire module
 
 Python implementation of te Campfire API
-
-```pyfire.version``` is a 3-tuple of integers representing the version number
-that can be used to compare releases (insipired from Chris AtLee work in 
-poster.) """
+"""
 
 __author__ = 'Mariano Iglesias'
 __license__ = 'MIT'
 __url__ = 'http://marianoiglesias.com.ar/tag/pyfire'
-
-version = (0, 3, 0)
 
 from .campfire import Campfire

@@ -3,6 +3,24 @@
 The goal of this package is to provide an easy to use implementation
 of the [Campfire API] [api] in Python.
 
+## INSTALLATION ##
+
+### Requirements ###
+
+Pyfire requires Chris AtLee's poster package to be installed.
+
+1. Download the latest package from http://atlee.ca/software/poster/#download
+2. Unzip the downloaded file, and run the following command from within the created directory:
+
+	$ python setup.py install
+
+### Installing ###
+
+1. Uncompress the pyfire package file.
+2. Unzip the downloaded file, and run the following command from within the created directory:
+
+	$ python setup.py install
+
 ## Usage Examples ##
 
 ### Sending a message to a room ###

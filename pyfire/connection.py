@@ -7,7 +7,7 @@ import types
 import urllib
 import urllib2
 
-from . import poster
+import poster
 
 class ConnectionError(Exception):
 	pass
