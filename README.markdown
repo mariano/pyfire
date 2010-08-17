@@ -98,5 +98,5 @@ NOTE: It is not necessary to join a room to listen for messages.
 	stream.stop().join()
 
 [api]: http://developer.37signals.com/campfire
-[poster]:
-[poster-download]:
+[poster]: http://atlee.ca/software/poster
+[poster-download]: http://atlee.ca/software/poster#download
