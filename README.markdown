@@ -42,6 +42,10 @@ room in order to listen to messages.
 				print "<-- %s LEFT THE ROOM" % user
 			elif message.is_text():
 				print "[%s] %s" % (user, message.body)
+			elif message.is_upload():
+				print "-- %s UPLOADED FILE %s: %s" % (user, message.upload["name"], message.upload["full_url"])
+			elif message.is_topic_change():
+				print "-- %s CHANGED TOPIC TO '%s'" % (user, message.body)
 
 	campfire = pyfire.Campfire("SUBDOMAIN", "USERNAME", "PASSWORD", ssl=True)
 	stream = campfire.get_room_by_name("My Room").get_stream()

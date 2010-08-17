@@ -5,11 +5,14 @@ class Message(CampfireEntity):
 	""" Campfire message """
 	
 	_TYPE_ENTER = "EnterMessage"
-	_TYPE_LEAVE = "KickMessage"
+	_TYPE_LEAVE = "LeaveMessage"
 	_TYPE_PASTE = "PasteMessage"
 	_TYPE_SOUND = "SoundMessage"
 	_TYPE_TEXT = "TextMessage"
+	_TYPE_TIMESTAMP = "TimestampMessage"
+	_TYPE_TOPIC_CHANGE = "TopicChangeMessage"
 	_TYPE_TWEET = "TweetMessage"
+	_TYPE_UPLOAD = "UploadMessage"
 
 	def __init__(self, campfire, data):
 		""" Initialize.
@@ -33,6 +36,8 @@ class Message(CampfireEntity):
 			self.user = self._campfire.get_user(data["user_id"])
 		if "room_id" in data and data["room_id"]:
 			self.room = self._campfire.get_room(data["room_id"])
+			if self.is_upload():
+				self.upload = self._connection.get("room/%s/messages/%s/upload" % (self.room.id, self.id), key="upload")
 
 	def is_joining(self):
 		""" Tells if this message is a room join message.
@@ -73,6 +78,34 @@ class Message(CampfireEntity):
 			self._TYPE_TEXT,
 			self._TYPE_TWEET
 		]
+
+	def is_timestamp(self):
+		""" Tells if this message is a timestamp.
+
+		Returns:
+			bool. Success
+		"""
+
+		return self.type == self._TYPE_TIMESTAMP
+
+
+	def is_topic_change(self):
+		""" Tells if this message is a topic change.
+
+		Returns:
+			bool. Success
+		"""
+
+		return self.type == self._TYPE_TOPIC_CHANGE
+
+	def is_upload(self):
+		""" Tells if this message is an upload message.
+
+		Returns:
+			bool. Success
+		"""
+
+		return self.type == self._TYPE_UPLOAD
 
 	def highlight(self):
 		""" Highlights a message.
