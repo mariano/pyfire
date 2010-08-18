@@ -44,16 +44,21 @@ This example shows us how to upload a file to a room. The upload takes place
 in a separate thread, so you should always use join() to wait for the thread
 to complete before finishing your application.
 
-NOTE: As you can see, we did not join the room to post an upload, since it
-is not a requirement.
+Also in this example, you can see the use of a callback function to keep a
+progress report of the upload.
+
+NOTE: We did not join the room to post an upload, since it is not a requirement.
 
 	import pyfire
 
+	def progress(parameter, current, total):
+		print("Uploading %d out of %d (%-.1f%%)" % (current, total, 100 * (float(current) / float(total))))
+
 	campfire = pyfire.Campfire("SUBDOMAIN", "USERNAME", "PASSWORD", ssl=True)
 	room = campfire.get_room_by_name("My Room")
-	upload = room.upload("/tmp/myfile.tar.gz")
+	upload = room.upload("/tmp/myfile.tar.gz", listener=progress)
+	print "Starting upload of %s" % path
 	upload.start()
-	print "Uploading %s" % path
 	upload.join()
 
 ### Streaming a room ###

@@ -134,27 +134,33 @@ class Room(CampfireEntity):
 		"""
 		return self._connection.post("room/%s/unlock" % self.id)["success"]
 
-	def upload(self, path):
+	def upload(self, path, listener=None):
 		""" Create a new thread to upload a file (thread should be
 		then started with start() to perform upload.)
 
 		Args:
 			path (str): Path to file
 
+		Kwargs:
+			listener (func): Callback to call as file is uploaded (parameters: parameter, current, total)
+
 		Returns:
 			:class:`Upload`. Upload thread
 		"""
-		return Upload(self, path)
+		return Upload(self, path, listener=listener)
 
 class Upload(Thread):
 	""" A live stream to a room in a separate thread """
 	
-	def __init__(self, room, path):
+	def __init__(self, room, path, listener=None):
 		""" Initialize.
 
 		Args:
 			room (:class:`Room`): Room where we are uploading
 			path (str): Path to file
+
+		Kwargs:
+			listener (func): Callback
 		"""
 		Thread.__init__(self)
 
@@ -162,6 +168,7 @@ class Upload(Thread):
 		self._path = path
 		self._connection = Connection.create_from_settings(settings)
 		self._room = room
+		self._listener = listener
 
 	def run(self):
 		""" Called by the thread, it runs the process.
@@ -175,7 +182,8 @@ class Upload(Thread):
 		try:
 			result = self._connection.post(
 				"room/%s/uploads" % self._room.id, 
-				{"upload": file_handle}
+				{"upload": file_handle},
+				listener=self._listener
 			)
 		except:
 			raise

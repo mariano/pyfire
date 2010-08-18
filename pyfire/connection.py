@@ -159,7 +159,7 @@ class Connection(object):
 		"""
 		return self._fetch("PUT", url, post_data=post_data, parse_data=parse_data, key=key, parameters=parameters, full_return=True)
 
-	def post(self, url=None, post_data={}, parse_data=False, key=None, parameters=None):
+	def post(self, url=None, post_data={}, parse_data=False, key=None, parameters=None, listener=None):
 		""" Issue a POST request.
 
 		Kwargs:
@@ -168,6 +168,7 @@ class Connection(object):
 			parse_data (bool): If true, parse response data
 			key (string): If parse_data==True, look for this key when parsing data
 			parameters (dict): Additional GET parameters to append to the URL
+			listener (func): callback called when uploading a file
 
 		Returns:
 			dict. Response (a dict with keys: success, data, info, body)
@@ -175,7 +176,7 @@ class Connection(object):
 		Raises:
 			AuthenticationError, ConnectionError, urllib2.HTTPError, ValueError, Exception
 		"""
-		return self._fetch("POST", url, post_data=post_data, parse_data=parse_data, key=key, parameters=parameters, full_return=True)
+		return self._fetch("POST", url, post_data=post_data, parse_data=parse_data, key=key, parameters=parameters, listener=listener, full_return=True)
 
 	def get(self, url=None, parse_data=True, key=None, parameters=None):
 		""" Issue a GET request.
@@ -194,7 +195,7 @@ class Connection(object):
 		"""
 		return self._fetch("GET", url, post_data=None, parse_data=parse_data, key=key, parameters=parameters)
 			
-	def _fetch(self, method, url=None, post_data=None, parse_data=True, key=None, parameters=None, full_return=False):
+	def _fetch(self, method, url=None, post_data=None, parse_data=True, key=None, parameters=None, listener=None, full_return=False):
 		""" Issue a request.
 
 		Args:
@@ -206,6 +207,7 @@ class Connection(object):
 			parse_data (bool): If true, parse response data
 			key (string): If parse_data==True, look for this key when parsing data
 			parameters (dict): Additional GET parameters to append to the URL
+			listener (func): callback called when uploading a file
 			full_return (bool): If set to True, get a full response (with success, data, info, body)
 
 		Returns:
@@ -274,7 +276,7 @@ class Connection(object):
 
 		if post_data is not None:
 			if has_file:
-				post_data, file_headers = poster.encode.multipart_encode(post_data)
+				post_data, file_headers = poster.encode.multipart_encode(post_data, cb=listener)
 				headers.update(file_headers)
 			elif isinstance(post_data, dict):
 				post_data = json.dumps(post_data)
