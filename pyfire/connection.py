@@ -194,6 +194,62 @@ class Connection(object):
 			AuthenticationError, ConnectionError, urllib2.HTTPError, ValueError, Exception
 		"""
 		return self._fetch("GET", url, post_data=None, parse_data=parse_data, key=key, parameters=parameters)
+
+	def get_headers(self):
+		""" Get headers.
+
+		Returns:
+			tuple: Headers
+		"""
+		headers = {
+			"User-Agent": "kFlame 1.0"
+		}
+
+		password_url = self._get_password_url()
+		if password_url and password_url in self._settings["authorizations"]:
+			headers["Authorization"] = self._settings["authorizations"][password_url]
+
+		return headers
+
+	def _get_password_url(self):
+		""" Get URL used for authentication
+
+		Returns:
+			string: URL
+		"""
+		password_url = None
+		if self._settings["user"] or self._settings["authorization"]:
+			if self._settings["url"]:
+				password_url = self._settings["url"]
+			elif self._settings["base_url"]:
+				password_url = self._settings["base_url"]
+		return password_url
+
+	def parse(self, text, key=None):
+		""" Parses a response.
+
+		Args:
+			text (str): Text to parse
+
+		Kwargs:
+			key (str): Key to look for, if any
+
+		Returns:
+			Parsed value
+
+		Raises:
+			ValueError
+		"""
+		try:
+			data = json.loads(text)
+		except ValueError as e:
+			raise ValueError("%s in %s: Value: [%s]" % (e, uri, text))
+
+		if data and key:
+			if key not in data:
+				raise ValueError("Invalid response (key %s not found): %s" % (key, data))
+			data = data[key]
+		return data
 			
 	def _fetch(self, method, url=None, post_data=None, parse_data=True, key=None, parameters=None, listener=None, full_return=False):
 		""" Issue a request.
@@ -214,7 +270,7 @@ class Connection(object):
 			dict. Response. If full_return==True, a dict with keys: success, data, info, body, otherwise the parsed data
 
 		Raises:
-			AuthenticationError, ConnectionError, urllib2.HTTPError, ValueError, Exception
+			AuthenticationError, ConnectionError, urllib2.HTTPError, ValueError
 		"""
 		has_file = False
 		if post_data is not None and isinstance(post_data, dict):
@@ -230,10 +286,11 @@ class Connection(object):
 		if parameters:
 			uri += "?%s" % urllib.urlencode(parameters)
 
-		headers = {
-			"User-Agent": "kFlame 1.0"
-		}
+#		headers = {
+#			"User-Agent": "kFlame 1.0"
+#		}
 
+		headers = self.get_headers()
 		if not has_file:
 			headers["Content-Type"] = "application/json"
 
@@ -252,25 +309,37 @@ class Connection(object):
 
 		handlers.append(urllib2.HTTPCookieProcessor(cookielib.CookieJar()))
 
-		password_url = None
-		if self._settings["user"] or self._settings["authorizations"]:
+		password_url = self._get_password_url()
+		if password_url and "Authorization" not in headers:
 			pwd_manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
-			password_url = None
-			if self._settings["url"]:
-				password_url = self._settings["url"]
-			elif self._settings["base_url"]:
-				password_url = self._settings["base_url"]
+			pwd_manager.add_password(None, password_url, self._settings["user"], self._settings["password"])
+			if has_file:
+				handlers.append(poster.streaminghttp.StreamingHTTPBasicAuthHandler(pwd_manager))
+			else:
+				handlers.append(urllib2.HTTPBasicAuthHandler(pwd_manager))
 
-			if password_url and (self._settings["user"] or password_url in self._settings["authorizations"]):
-				pwd_manager.add_password(None, password_url, self._settings["user"], self._settings["password"])
 
-				if password_url in self._settings["authorizations"]:
-					headers["Authorization"] = self._settings["authorizations"][password_url]
-				else:
-					if has_file:
-						handlers.append(poster.streaminghttp.StreamingHTTPBasicAuthHandler(pwd_manager))
-					else:
-						handlers.append(urllib2.HTTPBasicAuthHandler(pwd_manager))
+#		password_url = None
+#		if self._settings["user"] or self._settings["authorizations"]:
+#			password_url = None
+#			if self._settings["url"]:
+#				password_url = self._settings["url"]
+#			elif self._settings["base_url"]:
+#				password_url = self._settings["base_url"]
+#
+#			if password_url and (self._settings["user"] or password_url in self._settings["authorizations"]):
+#				if password_url in self._settings["authorizations"]:
+#					headers["Authorization"] = self._settings["authorizations"][password_url]
+#				else:
+#					pwd_manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
+#					pwd_manager.add_password(None, password_url, self._settings["user"], self._settings["password"])
+#					if has_file:
+#						handlers.append(poster.streaminghttp.StreamingHTTPBasicAuthHandler(pwd_manager))
+#					else:
+#						handlers.append(urllib2.HTTPBasicAuthHandler(pwd_manager))
+#
+#		if not has_file:
+#			headers["Content-Type"] = "application/json"
 
 		opener = urllib2.build_opener(*handlers)
 
@@ -309,17 +378,10 @@ class Connection(object):
 
 		data = None
 		if parse_data:
-			try:
-				data = json.loads(body)
-			except ValueError as e:
-				raise ValueError("%s in %s: Value: [%s]" % (e, uri, body))
-
 			if not key:
 				key = string.split(url, "/")[0]
-			if data and key:
-				if key not in data:
-					raise Exception("Invalid response (key %s not found): %s" % (key, data))
-				data = data[key]
+
+			data = self.parse(body, key)
 
 		if full_return:
 			info = response.info() if response else None

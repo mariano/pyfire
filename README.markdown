@@ -7,17 +7,29 @@ of the [Campfire API] [api] in Python.
 
 ### Requirements ###
 
-Pyfire requires [Chris AtLee's poster package] [poster] to be installed.
+Pyfire requires [Chris AtLee's Poster package] [poster] to be installed.
 
-1. Download the [latest poster package] [poster-download]
-2. Unzip the downloaded file, and run the following command from within the created directory:
+1. Download the [latest Poster package] [poster-download]
+2. Unzip the downloaded file, and run the following command from within the
+created directory:
 
 		$ python setup.py install
+
+Pyfire also uses [Twisted] [twisted] for live streaming. 
+The [Twisted installation website] [twisted-install] shows how to install
+Twisted on several
+platforms. For Ubuntu based systems, Twisted is on the official repositories,
+and can be installed with:
+
+		$ sudo add-apt-repository ppa:twisted-dev/ppa
+		$ sudo apt-get update
+		$ sudo apt-get install python-twisted
 
 ### Installing ###
 
 1. Uncompress the pyfire package file.
-2. Unzip the downloaded file, and run the following command from within the created directory:
+2. Unzip the downloaded file, and run the following command from within the 
+created directory:
 
 		$ python setup.py install
 
@@ -40,9 +52,9 @@ post that message in the room, and then leave the room.
 
 ### Uploading a file to a room ###
 
-This example shows us how to upload a file to a room. The upload takes place
-in a separate thread, so you should always use join() to wait for the thread
-to complete before finishing your application.
+This example shows us how to upload a file to a room. The upload takes place in
+a separate thread, so you should always use join() to wait for the thread to 
+complete before finishing your application.
 
 Also in this example, you can see the use of a callback function to keep a
 progress report of the upload.
@@ -67,41 +79,82 @@ This example shows us how to print out messages sent, or being sent, to a room.
 Notice that this process will be listening for messages until you finish the 
 process (by pressing ENTER).
 
-The stream creates a thread to process the incoming messages. By default, it
-will also create a second process to fetch data from Campfire. Make sure
-you wait for the thread to finish (using join()) before finishing your main
-process.
+#### LIVE streaming ####
 
-NOTE: It is not necessary to join a room to listen for messages.
+Thanks for the inspiration of the work of Lawrence Oluyede on [Pinder] [pinder],
+live streaming of a room is performed using the [Twisted] [twisted] module. This
+allows for real live streaming (rather than the transcript based streaming shown
+below). In order to stream a room, you first have to join it (Pyfire will
+automatically join the room for you, if you haven't)
+
+The stream will create a child process to not interrupt with your main process.
 
 	import pyfire
 
-	class MessageListener:
-		@staticmethod
-		def message(message):
-			user = ""
-			if message.user:
-				user = message.user.name
+	def incoming(message):
+		user = ""
+		if message.user:
+			user = message.user.name
 
-			if message.is_joining():
-				print "--> %s ENTERS THE ROOM" % user
-			elif message.is_leaving():
-				print "<-- %s LEFT THE ROOM" % user
-			elif message.is_tweet():
-				print "[%s] %s TWEETED '%s' - %s" % (user, message.tweet["user"], message.tweet["tweet"], message.tweet["url"])
-			elif message.is_text():
-				print "[%s] %s" % (user, message.body)
-			elif message.is_upload():
-				print "-- %s UPLOADED FILE %s: %s" % (user, message.upload["name"], message.upload["url"])
-			elif message.is_topic_change():
-				print "-- %s CHANGED TOPIC TO '%s'" % (user, message.body)
+		if message.is_joining():
+			print "--> %s ENTERS THE ROOM" % user
+		elif message.is_leaving():
+			print "<-- %s LEFT THE ROOM" % user
+		elif message.is_tweet():
+			print "[%s] %s TWEETED '%s' - %s" % (user, message.tweet["user"], message.tweet["tweet"], message.tweet["url"])
+		elif message.is_text():
+			print "[%s] %s" % (user, message.body)
+		elif message.is_upload():
+			print "-- %s UPLOADED FILE %s: %s" % (user, message.upload["name"], message.upload["url"])
+		elif message.is_topic_change():
+			print "-- %s CHANGED TOPIC TO '%s'" % (user, message.body)
 
 	campfire = pyfire.Campfire("SUBDOMAIN", "USERNAME", "PASSWORD", ssl=True)
-	stream = campfire.get_room_by_name("My Room").get_stream()
-	stream.attach(MessageListener.message).start()
+	room = campfire.get_room_by_name("My Room")
+	room.join()
+	stream = room.get_stream()
+	stream.attach(incoming).start()
+	raw_input("|| Press ENTER to finish ||")
+	stream.stop().join()
+	room.leave()
+
+#### Transcript based streaming ####
+
+The stream creates a thread to process the incoming messages. By default, it
+will also create a second process to fetch data from Campfire. Make sure you
+wait for the thread to finish (using join()) before finishing your main process.
+
+NOTE: It is not necessary to join a room to listen for messages by using
+transcripts.
+
+	import pyfire
+
+	def incoming(message):
+		user = ""
+		if message.user:
+			user = message.user.name
+
+		if message.is_joining():
+			print "--> %s ENTERS THE ROOM" % user
+		elif message.is_leaving():
+			print "<-- %s LEFT THE ROOM" % user
+		elif message.is_tweet():
+			print "[%s] %s TWEETED '%s' - %s" % (user, message.tweet["user"], message.tweet["tweet"], message.tweet["url"])
+		elif message.is_text():
+			print "[%s] %s" % (user, message.body)
+		elif message.is_upload():
+			print "-- %s UPLOADED FILE %s: %s" % (user, message.upload["name"], message.upload["url"])
+		elif message.is_topic_change():
+			print "-- %s CHANGED TOPIC TO '%s'" % (user, message.body)
+
+	campfire = pyfire.Campfire("SUBDOMAIN", "USERNAME", "PASSWORD", ssl=True)
+	stream = campfire.get_room_by_name("My Room").get_stream(live=False)
+	stream.attach(incoming).start()
 	raw_input("|| Press ENTER to finish ||")
 	stream.stop().join()
 
 [api]: http://developer.37signals.com/campfire
 [poster]: http://atlee.ca/software/poster
 [poster-download]: http://atlee.ca/software/poster#download
+[twisted]: http://twistedmatrix.com
+[pinder]: http://github.com/rhymes/pinder

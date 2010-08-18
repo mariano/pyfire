@@ -21,13 +21,18 @@ class Room(CampfireEntity):
 	def _load(self, id=None):
 		self.set_data(self._connection.get("room/%s" % (id or self.id)))
 
-	def get_stream(self):
+	def get_stream(self, live=True):
 		""" Get room stream to listen for messages.
+
+		Kwargs:
+			live (bool): If True, issue a live stream, otherwise an offline stream
 
 		Returns:
 			:class:`Stream`. Stream
 		"""
-		return Stream(self)
+		if live:
+			self.join()
+		return Stream(self, live=live)
 
 	def get_uploads(self):
 		""" Get list of recent uploads.

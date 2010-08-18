@@ -4,19 +4,26 @@ from threading import Thread
 from multiprocessing import Process, Queue
 from Queue import Empty
 
+from twisted.internet import reactor
+from twisted.internet import defer
+from twisted.protocols import basic
+from twisted.web import client
+from twisted.web import http_headers
+
 from .connection import Connection
 from .message import Message
 
 class Stream(Thread):
 	""" A live stream to a room in a separate thread """
 	
-	def __init__(self, room, pause=1, use_process=True):
+	def __init__(self, room, live=True, pause=1, use_process=True):
 		""" Initialize.
 
 		Args:
 			room (:class:`Room`): Room that is being streamed
 
 		Kwargs:
+			live (bool): If True, issue a live stream, otherwise an offline stream
 			pause (int): Pause in seconds between requests
 			use_process (bool): If True, use a separate process to fetch the messages
 
@@ -31,6 +38,7 @@ class Stream(Thread):
 			raise ValueError("A minimum pause of 1 second needs to be specified")
 
 		self._room = room
+		self._live = live
 		self._observers = []
 		self._pause = pause
 		self._use_process = use_process
@@ -63,14 +71,17 @@ class Stream(Thread):
 			pass
 		return self
 
-	def notify(self, message):
-		""" Notify all observers of a new message.
+	def incoming(self, messages):
+		""" Called when incoming messages arrive.
 
 		Args:
-			message (:class:`Message`): Incoming message
+			messages (tuple): Messages (each message is a dict)
 		"""
-		for observer in self._observers:
-			observer(message)
+		if self._observers:
+			campfire = self._room.get_campfire()
+			for message in messages:
+				for observer in self._observers:
+					observer(Message(campfire, message))
 
 	def stop(self):
 		""" Stop streaming.
@@ -90,52 +101,84 @@ class Stream(Thread):
 
 		To stop, call stop(), and then join()
 		"""
+
+		if self._live:
+			self._use_process = True
+
 		self._abort = False
 		campfire = self._room.get_campfire()
-		process = StreamProcess(campfire.get_connection().get_settings(), self._room.id, pause=self._pause)
+		process = StreamProcess(campfire.get_connection().get_settings(), self._room.id, live=self._live, pause=self._pause)
+
+		if not self._use_process:
+			process.set_callback(self.incoming)
 
 		if self._use_process:
 			queue = Queue()
 			process.set_queue(queue)
 			process.start()
+			if not process.is_alive():
+				self._abort = True
+		elif self._live:
+			process.fetch()
+
+		if self._live and not self._use_process:
+			return
 
 		while not self._abort:
 			messages = None
 			if self._use_process:
 				try:
-					messages = queue.get_nowait()
+					self.incoming(queue.get_nowait())
 				except Empty:
 					time.sleep(0.5)
 					pass
 			else:
-				messages = process.fetch()
-
-			if messages:
-				for message in messages:
-					self.notify(Message(campfire, message))
+				if not self._live:
+					process.fetch()
+				time.sleep(self._pause)
 
 		if self._use_process:
 			queue.close()
-			process.terminate()
+			if process.is_alive():
+				process.stop()
+				process.terminate()
+				process.join()
+		elif self._live:
+			process.stop()
 
-class StreamProcess(Process):
+class StreamProcess(Process, basic.LineReceiver):
 	""" Separate process implementation to get messages """
 	
-	def __init__(self, settings, room_id, queue=None, pause=1):
+	delimiter = '\r'
+	
+	def __init__(self, settings, room_id, live=True, pause=1):
 		""" Initialize.
 
 		Args:
 			settings (dict): Settings used to create a :class:`Connection` instance
 			room_id (int): Room ID
-			queue (:class:`multiprocessing.Queue`): A queue to share data between processes
+
+		Kwargs:
+			live (bool): If True, issue a live stream, otherwise an offline stream
+			callback (func): Called when new messages arrive
 			pause (int): Pause in seconds between requests
 		"""
 		Process.__init__(self)
+		self._live = live
 		self._pause = pause
 		self._room_id = room_id
+		self._callback = None
+		self._queue = None
 		self._connection = Connection.create_from_settings(settings)
 		self._last_message_id = None
-		self.set_queue(queue)
+	
+	def set_callback(self, callback):
+		""" Set callback.
+
+		Args:
+			callback (func): Called when new messages arrive
+		"""
+		self._callback = callback
 
 	def set_queue(self, queue):
 		""" Set the queue to communicate between processes.
@@ -156,29 +199,97 @@ class StreamProcess(Process):
 		if not self._queue:
 			raise Exception("No queue available to send messages")
 
-		while True:
-			messages = self.fetch()
-			if messages:
-				self._queue.put_nowait(messages)
-			time.sleep(self._pause)
+		if self._live:
+			self.fetch()
+		else:
+			while True:
+				self.fetch()
+				time.sleep(self._pause)
 
 	def fetch(self):
-		""" Fetch new messages.
+		""" Fetch new messages. """
+		if self._live:
+			url = 'https://streaming.campfirenow.com/room/%s/live.json' % self._room_id
+			agent = client.Agent(reactor)
+			rawHeaders = self._connection.get_headers()
+			headers = http_headers.Headers()
+			for header in rawHeaders:
+				headers.addRawHeader(header, rawHeaders[header])
+			request = agent.request('GET', url, headers, None)
+			request.addCallback(self._twisted_response)
+			request.addErrback(self._twisted_shutdown)
+
+			reactor.run()
+		else:
+			try:
+				if not self._last_message_id:
+					messages = self._connection.get("room/%s/transcript" % self._room_id, key="messages")
+				else:
+					messages = self._connection.get("room/%s/recent" % self._room_id, key="messages", parameters={
+						"since_message_id": self._last_message_id
+					})
+			except:
+				messages = []
+
+			if messages:
+				self._last_message_id = messages[-1]["id"]
+
+			self.received(messages)
+
+	def stop(self):
+		""" Stop streaming (only applicable when self._live is True) """
+		if self._live and reactor.running:
+			reactor.stop()
+
+	def received(self, messages):
+		""" Called when new messages arrive.
+
+		Args:
+			messages (tuple): Messages
+		"""
+		if messages:
+			if self._queue:
+				self._queue.put_nowait(messages)
+
+			if self._callback:
+				self._callback(messages)
+
+	def _twisted_response(self, response):
+		""" Called issued by twisted when response arrives.
+
+		Args:
+			response (:class:`twisted.web.client.Response`): Response
 
 		Returns:
-			tuple. List of messages
+			:class:(`twisted.internet.defer`). Deferred
 		"""
-		try:
-			if not self._last_message_id:
-				messages = self._connection.get("room/%s/transcript" % self._room_id, key="messages")
-			else:
-				messages = self._connection.get("room/%s/recent" % self._room_id, key="messages", parameters={
-					"since_message_id": self._last_message_id
-				})
-		except:
-			messages = []
+		response.deliverBody(self)
+		return defer.Deferred()
+	
+	def _twisted_shutdown(self, reason):
+		""" Called issued by twisted when shutting down.
 
-		if messages:
-			self._last_message_id = messages[-1]["id"]
+		Args:
+			reason: Reason
+		"""
+		print "SHUTDOWN: "
+		if reactor.running:
+			reactor.stop()
 
-		return messages
+	def lineReceived(self, line):
+		""" Callback issued by twisted when new line arrives.
+
+		Args:
+			line (str): Incoming line
+		"""
+		message = self._connection.parse(line)
+		if message:
+			self.received([message])
+
+	def connectionLost(self, reason):
+		""" Callback isued by twisted when connection is lost.
+
+		Args:
+			reason (Exception): reason
+		"""
+		pass
