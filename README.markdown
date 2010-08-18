@@ -31,7 +31,7 @@ instead, and install Twisted:
 		$ sudo apt-get install python-twisted
 
 *Ubuntu Maverick (10.10)*: the version included is what Pyfire requires, so
-Twisted can then be easily installed with:
+Twisted can be easily installed with:
 
 		$ sudo apt-get install python-twisted
 
