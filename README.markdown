@@ -23,8 +23,8 @@ For Ubuntu based systems, Twisted is on the official repositories, and can be
 installed the following way:
 
 *Ubuntu Lucid (10.04)*: the version included in the official repositories (10.0)
-is older than what Pyfire requires. You can use twisted PPA repository instead,
-and install Twisted:
+is older than what Pyfire requires. You can use twisted PPA's repository
+instead, and install Twisted:
 
 		$ sudo add-apt-repository ppa:twisted-dev/ppa
 		$ sudo apt-get update
