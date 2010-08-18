@@ -286,10 +286,6 @@ class Connection(object):
 		if parameters:
 			uri += "?%s" % urllib.urlencode(parameters)
 
-#		headers = {
-#			"User-Agent": "kFlame 1.0"
-#		}
-
 		headers = self.get_headers()
 		if not has_file:
 			headers["Content-Type"] = "application/json"
@@ -317,29 +313,6 @@ class Connection(object):
 				handlers.append(poster.streaminghttp.StreamingHTTPBasicAuthHandler(pwd_manager))
 			else:
 				handlers.append(urllib2.HTTPBasicAuthHandler(pwd_manager))
-
-
-#		password_url = None
-#		if self._settings["user"] or self._settings["authorizations"]:
-#			password_url = None
-#			if self._settings["url"]:
-#				password_url = self._settings["url"]
-#			elif self._settings["base_url"]:
-#				password_url = self._settings["base_url"]
-#
-#			if password_url and (self._settings["user"] or password_url in self._settings["authorizations"]):
-#				if password_url in self._settings["authorizations"]:
-#					headers["Authorization"] = self._settings["authorizations"][password_url]
-#				else:
-#					pwd_manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
-#					pwd_manager.add_password(None, password_url, self._settings["user"], self._settings["password"])
-#					if has_file:
-#						handlers.append(poster.streaminghttp.StreamingHTTPBasicAuthHandler(pwd_manager))
-#					else:
-#						handlers.append(urllib2.HTTPBasicAuthHandler(pwd_manager))
-#
-#		if not has_file:
-#			headers["Content-Type"] = "application/json"
 
 		opener = urllib2.build_opener(*handlers)
 
