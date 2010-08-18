@@ -267,8 +267,6 @@ class StreamProcess(Process, basic.LineReceiver):
 		Args:
 			reason: Reason
 		"""
-		print "SHUTDOWN: "
-		print reason
 		if self._reactor and self._reactor.running:
 			self._reactor.stop()
 
