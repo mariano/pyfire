@@ -92,7 +92,7 @@ NOTE: It is not necessary to join a room to listen for messages.
 			elif message.is_text():
 				print "[%s] %s" % (user, message.body)
 			elif message.is_upload():
-				print "-- %s UPLOADED FILE %s: %s" % (user, message.upload["name"], message.upload["full_url"])
+				print "-- %s UPLOADED FILE %s: %s" % (user, message.upload["name"], message.upload["url"])
 			elif message.is_topic_change():
 				print "-- %s CHANGED TOPIC TO '%s'" % (user, message.body)
 
