@@ -88,8 +88,8 @@ order to stream a room, you first have to join it (Pyfire will automatically
 join the room for you, if you haven't)
 
 The live stream will create a thread to process the incoming messages, and a
-child process to not fetch the messages from the server. Make sure you wait for
-the thread to finish (using join()) before ending your main process.
+child process to fetch the messages from the server. Make sure you wait for the
+thread to finish (using join()) before ending your main process.
 
 	import pyfire
 
