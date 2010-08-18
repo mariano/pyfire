@@ -15,14 +15,24 @@ created directory:
 
 		$ python setup.py install
 
-Pyfire also uses [Twisted] [twisted] for live streaming. 
-The [Twisted installation website] [twisted-install] shows how to install
-Twisted on several
-platforms. For Ubuntu based systems, Twisted is on the official repositories,
-and can be installed with:
+Pyfire also uses [Twisted] [twisted] (version 10.1.0 or greater) for live
+streaming. The [Twisted download page] [twisted-download] shows how to install
+Twisted on several platforms. 
+
+For Ubuntu based systems, Twisted is on the official repositories, and can be
+installed the following way:
+
+*Ubuntu Lucid (10.04)*: the version included in the official repositories (10.0)
+is older than what Pyfire requires. You can use twisted PPA repository instead,
+and install Twisted:
 
 		$ sudo add-apt-repository ppa:twisted-dev/ppa
 		$ sudo apt-get update
+		$ sudo apt-get install python-twisted
+
+*Ubuntu Maverick (10.10)*: the version included is what Pyfire requires, so
+Twisted can then be easily installed with:
+
 		$ sudo apt-get install python-twisted
 
 ### Installing ###
@@ -170,4 +180,5 @@ transcripts.
 [poster]: http://atlee.ca/software/poster
 [poster-download]: http://atlee.ca/software/poster#download
 [twisted]: http://twistedmatrix.com
+[twisted-download]: http://twistedmatrix.com/trac/wiki/Downloads
 [pinder]: http://github.com/rhymes/pinder
