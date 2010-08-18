@@ -7,6 +7,11 @@ import types
 import urllib
 import urllib2
 
+from twisted.internet import reactor
+from twisted.protocols import basic
+from twisted.web import client
+from twisted.web import http_headers
+
 import poster
 
 class ConnectionError(Exception):
@@ -250,6 +255,31 @@ class Connection(object):
 				raise ValueError("Invalid response (key %s not found): %s" % (key, data))
 			data = data[key]
 		return data
+
+	def build_twisted_request(self, method, url, body_producer=None, full_url=False):
+		""" Build a request for twisted
+
+		Args:
+			method (str): Request method (GET/POST/PUT/DELETE/etc.) If not specified, it will be POST if post_data is not None
+			url (str): Destination URL (full, or relative)
+
+		Kwargs:
+			body_producer (:class:`twisted.web.iweb.IBodyProducer`): Object producing request body
+			full_url (bool): If False, URL is relative
+
+		Returns:
+			tuple. Tuple with two elements: reactor, and request
+		"""
+		uri = url if full_url else self._url(url)
+
+		agent = client.Agent(reactor)
+		rawHeaders = self.get_headers()
+		headers = http_headers.Headers()
+		for header in rawHeaders:
+			headers.addRawHeader(header, rawHeaders[header])
+		request = agent.request(method, uri, headers, body_producer)
+
+		return (reactor, request)
 			
 	def _fetch(self, method, url=None, post_data=None, parse_data=True, key=None, parameters=None, listener=None, full_return=False):
 		""" Issue a request.
@@ -278,13 +308,6 @@ class Connection(object):
 				if hasattr(post_data[key], "read"):
 					has_file = True
 					break
-
-		uri = url or self._settings["url"]
-		if url and self._settings["base_url"]:
-			uri = "%s/%s" % (self._settings["base_url"], url)
-		uri += ".json"
-		if parameters:
-			uri += "?%s" % urllib.urlencode(parameters)
 
 		headers = self.get_headers()
 		if not has_file:
@@ -323,6 +346,7 @@ class Connection(object):
 			elif isinstance(post_data, dict):
 				post_data = json.dumps(post_data)
 
+		uri = self._url(url, parameters)
 		request = RESTRequest(uri, method=method, headers=headers)
 		if post_data is not None:
 			request.add_data(post_data)
@@ -368,3 +392,22 @@ class Connection(object):
 			}
 
 		return data
+
+	def _url(self, url=None, parameters=None):
+		""" Build destination URL.
+
+		Kwargs:
+			url (str): Destination URL
+			parameters (dict): Additional GET parameters to append to the URL
+
+		Returns:
+			str. URL 
+		"""
+
+		uri = url or self._settings["url"]
+		if url and self._settings["base_url"]:
+			uri = "%s/%s" % (self._settings["base_url"], url)
+		uri += ".json"
+		if parameters:
+			uri += "?%s" % urllib.urlencode(parameters)
+		return uri

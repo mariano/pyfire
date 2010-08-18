@@ -4,11 +4,8 @@ from threading import Thread
 from multiprocessing import Process, Queue
 from Queue import Empty
 
-from twisted.internet import reactor
 from twisted.internet import defer
 from twisted.protocols import basic
-from twisted.web import client
-from twisted.web import http_headers
 
 from .connection import Connection
 from .message import Message
@@ -169,6 +166,7 @@ class StreamProcess(Process, basic.LineReceiver):
 		self._room_id = room_id
 		self._callback = None
 		self._queue = None
+		self._reactor = None
 		self._connection = Connection.create_from_settings(settings)
 		self._last_message_id = None
 	
@@ -210,16 +208,13 @@ class StreamProcess(Process, basic.LineReceiver):
 		""" Fetch new messages. """
 		if self._live:
 			url = 'https://streaming.campfirenow.com/room/%s/live.json' % self._room_id
-			agent = client.Agent(reactor)
-			rawHeaders = self._connection.get_headers()
-			headers = http_headers.Headers()
-			for header in rawHeaders:
-				headers.addRawHeader(header, rawHeaders[header])
-			request = agent.request('GET', url, headers, None)
+
+			self._reactor, request = self._connection.build_twisted_request("GET", url, full_url=True)
+
 			request.addCallback(self._twisted_response)
 			request.addErrback(self._twisted_shutdown)
 
-			reactor.run()
+			self._reactor.run()
 		else:
 			try:
 				if not self._last_message_id:
@@ -238,8 +233,8 @@ class StreamProcess(Process, basic.LineReceiver):
 
 	def stop(self):
 		""" Stop streaming (only applicable when self._live is True) """
-		if self._live and reactor.running:
-			reactor.stop()
+		if self._live and self._reactor and self._reactor.running:
+			self._reactor.stop()
 
 	def received(self, messages):
 		""" Called when new messages arrive.
@@ -273,8 +268,9 @@ class StreamProcess(Process, basic.LineReceiver):
 			reason: Reason
 		"""
 		print "SHUTDOWN: "
-		if reactor.running:
-			reactor.stop()
+		print reason
+		if self._reactor and self._reactor.running:
+			self._reactor.stop()
 
 	def lineReceived(self, line):
 		""" Callback issued by twisted when new line arrives.
