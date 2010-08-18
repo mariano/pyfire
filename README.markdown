@@ -81,13 +81,15 @@ process (by pressing ENTER).
 
 #### LIVE streaming ####
 
-Thanks for the inspiration of the work of Lawrence Oluyede on [Pinder] [pinder],
-live streaming of a room is performed using the [Twisted] [twisted] module. This
-allows for real live streaming (rather than the transcript based streaming shown
-below). In order to stream a room, you first have to join it (Pyfire will
-automatically join the room for you, if you haven't)
+Inspired by the work of Lawrence Oluyede on [Pinder] [pinder], live streaming of
+a room is performed using the [Twisted] [twisted] module. This allows for real
+live streaming (rather than the transcript based streaming shown below). In
+order to stream a room, you first have to join it (Pyfire will automatically
+join the room for you, if you haven't)
 
-The stream will create a child process to not interrupt with your main process.
+The live stream will create a thread to process the incoming messages, and a
+child process to not fetch the messages from the server. Make sure you wait for
+the thread to finish (using join()) before ending your main process.
 
 	import pyfire
 
@@ -101,11 +103,13 @@ The stream will create a child process to not interrupt with your main process.
 		elif message.is_leaving():
 			print "<-- %s LEFT THE ROOM" % user
 		elif message.is_tweet():
-			print "[%s] %s TWEETED '%s' - %s" % (user, message.tweet["user"], message.tweet["tweet"], message.tweet["url"])
+			print "[%s] %s TWEETED '%s' - %s" % (user, message.tweet["user"], 
+				message.tweet["tweet"], message.tweet["url"])
 		elif message.is_text():
 			print "[%s] %s" % (user, message.body)
 		elif message.is_upload():
-			print "-- %s UPLOADED FILE %s: %s" % (user, message.upload["name"], message.upload["url"])
+			print "-- %s UPLOADED FILE %s: %s" % (user, message.upload["name"],
+				message.upload["url"])
 		elif message.is_topic_change():
 			print "-- %s CHANGED TOPIC TO '%s'" % (user, message.body)
 
@@ -120,9 +124,16 @@ The stream will create a child process to not interrupt with your main process.
 
 #### Transcript based streaming ####
 
-The stream creates a thread to process the incoming messages. By default, it
-will also create a second process to fetch data from Campfire. Make sure you
-wait for the thread to finish (using join()) before finishing your main process.
+This example shows how to stream a room without using actual live streaming, but
+by using the room transcripts. This allows you to listen for messages without
+having to explicitly join the room. If you want live streaming, it is always
+recommended that you use LIVE steaming (as shown in the previous example), but
+transcript based streaming may serve useful in other scenarios.
+
+The trancript based stream creates a thread to process the incoming messages. 
+By default, it will also create a second process to fetch data from Campfire.
+Make sure you wait for the thread to finish (using join()) before ending your
+main process.
 
 NOTE: It is not necessary to join a room to listen for messages by using
 transcripts.
@@ -139,11 +150,13 @@ transcripts.
 		elif message.is_leaving():
 			print "<-- %s LEFT THE ROOM" % user
 		elif message.is_tweet():
-			print "[%s] %s TWEETED '%s' - %s" % (user, message.tweet["user"], message.tweet["tweet"], message.tweet["url"])
+			print "[%s] %s TWEETED '%s' - %s" % (user, message.tweet["user"], 
+				message.tweet["tweet"], message.tweet["url"])
 		elif message.is_text():
 			print "[%s] %s" % (user, message.body)
 		elif message.is_upload():
-			print "-- %s UPLOADED FILE %s: %s" % (user, message.upload["name"], message.upload["url"])
+			print "-- %s UPLOADED FILE %s: %s" % (user, message.upload["name"], 
+				message.upload["url"])
 		elif message.is_topic_change():
 			print "-- %s CHANGED TOPIC TO '%s'" % (user, message.body)
 
