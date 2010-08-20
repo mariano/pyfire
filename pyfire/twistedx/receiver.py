@@ -1,6 +1,5 @@
 from twisted.internet import protocol
 from twisted.web import client
-from twisted.internet import reactor
 
 class StringReceiver(protocol.Protocol):
 	buffer = ""
