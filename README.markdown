@@ -11,7 +11,7 @@ Pyfire requires [Twisted] [twisted] (version 10.1.0 or greater.) The
 [Twisted download page] [twisted-download] shows how to install Twisted on 
 several platforms. 
 
-For Ubuntu based systems, Twisted is on the official repositories, and can be
+For Ubuntu based systems, Twisted is in the official repositories, and can be
 installed the following way:
 
 *Ubuntu Lucid (10.04)*: the version included in the official repositories (10.0)

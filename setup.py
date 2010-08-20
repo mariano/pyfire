@@ -21,5 +21,5 @@ in Python.""",
 	include_package_data=True,
 	zip_safe=True,
 	packages=['pyfire'],
-	requires=['poster (>=0.6)']
+	requires=['twisted (>=10.1.0)']
 )
