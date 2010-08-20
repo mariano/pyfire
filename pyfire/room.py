@@ -22,13 +22,16 @@ class Room(CampfireEntity):
 	def _load(self, id=None):
 		self.set_data(self._connection.get("room/%s" % (id or self.id)))
 
-	def get_stream(self):
+	def get_stream(self, error_callback=None):
 		""" Get room stream to listen for messages.
+
+		Kwargs:
+			error_callback (func): Callback to call when an error occurred (parameters: exception)
 
 		Returns:
 			:class:`Stream`. Stream
 		"""
-		return Stream(self)
+		return Stream(self, error_callback=error_callback)
 
 	def get_uploads(self):
 		""" Get list of recent uploads.

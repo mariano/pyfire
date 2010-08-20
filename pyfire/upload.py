@@ -36,6 +36,15 @@ class Upload(Thread):
 		self._finished_callback = finished_callback
 		self._error_callback = error_callback
 		self._abort = False
+		self._uploading = False
+
+	def is_uploading(self):
+		""" Tell if upload is in progress.
+		
+		Returns:
+			bool. Success
+		"""
+		return self._uploading
 
 	def stop(self):
 		""" Stop uploading.
@@ -61,8 +70,17 @@ class Upload(Thread):
 			process.add_data(self._data)
 		process.start()
 
+		if not process.is_alive():
+			return
+
+		self._uploading = True
+
 		done = False
 		while not self._abort and not done:
+			if not process.is_alive():
+				self._abort = True
+				break
+
 			messages = None
 			try:
 				data = queue.get_nowait()
@@ -80,12 +98,16 @@ class Upload(Thread):
 						self._error_callback(data)
 			except Empty:
 				time.sleep(0.5)
-				pass
+
+		self._uploading = False
+		if self._abort and not process.is_alive() and self._error_callback:
+			self._error_callback(Exception("Upload process was killed"))
 
 		queue.close()
 		if process.is_alive():
+			queue.close()
 			process.terminate()
-			process.join()
+		process.join()
 
 class UploadProcess(Process):
 	""" Separate process implementation to upload files """

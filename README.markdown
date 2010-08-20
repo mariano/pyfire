@@ -63,16 +63,20 @@ progress report of the upload, inform when the upload finished, or errored out.
 
 NOTE: We did not join the room to post an upload, since it is not a requirement.
 
+	import sys
 	import pyfire
 
 	def progress(current, total):
-		print("Uploading %d out of %d (%-.1f%%)" % (current, total, 100 * (float(current) / float(total))))
+		sys.stdout.write("\b" * 80)
+		sys.stdout.write("Uploading %d out of %d (%-.1f%%)" % (current, total, 100 * (float(current) / float(total))))
 
 	def finished():
-		print("Upload succeeded!")
+		print("\nUpload Finished!")
+		print("Press ENTER to continue")
 
 	def error(e):
-		print("ERROR while uploading: %s" % e)
+		print("\nUpload STOPPED due to ERROR: %s" % e)
+		print("Press ENTER to continue")
 
 	campfire = pyfire.Campfire("SUBDOMAIN", "USERNAME", "PASSWORD", ssl=True)
 	room = campfire.get_room_by_name("My Room")
@@ -83,7 +87,10 @@ NOTE: We did not join the room to post an upload, since it is not a requirement.
 		error_callback = error
 	)
 	upload.start()
-	print ("Started upload of %s" % path)
+	print ("Started upload of %s (press ENTER to stop upload)" % path)
+	raw_input()
+	if upload.is_uploading():
+		upload.stop()
 	upload.join()
 
 ### Streaming a room ###
@@ -126,12 +133,16 @@ thread to finish (using join()) before ending your main process.
 		elif message.is_topic_change():
 			print "-- %s CHANGED TOPIC TO '%s'" % (user, message.body)
 
+	def error(e):
+		print("Stream STOPPED due to ERROR: %s" % e)
+		print("Press ENTER to continue")
+
 	campfire = pyfire.Campfire("SUBDOMAIN", "USERNAME", "PASSWORD", ssl=True)
 	room = campfire.get_room_by_name("My Room")
 	room.join()
-	stream = room.get_stream()
-	stream.attach(incoming).start()
-	raw_input("|| Press ENTER to finish ||")
+	stream = room.get_stream(error_callback=error)
+	stream.attach(MessageListener.message).start()
+	raw_input("Waiting for messages (Press ENTER to finish)\n")
 	stream.stop().join()
 	room.leave()
 

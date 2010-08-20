@@ -13,7 +13,7 @@ from .message import Message
 class Stream(Thread):
 	""" A live stream to a room in a separate thread """
 	
-	def __init__(self, room, live=True, pause=1, use_process=True):
+	def __init__(self, room, live=True, error_callback=None, pause=1, use_process=True):
 		""" Initialize.
 
 		Args:
@@ -21,6 +21,7 @@ class Stream(Thread):
 
 		Kwargs:
 			live (bool): If True, issue a live stream, otherwise an offline stream
+			error_callback (func): A callback to call when an error occurs
 			pause (int): Pause in seconds between requests
 			use_process (bool): If True, use a separate process to fetch the messages
 
@@ -37,8 +38,10 @@ class Stream(Thread):
 		self._room = room
 		self._live = live
 		self._observers = []
+		self._error_callback = error_callback
 		self._pause = pause
 		self._use_process = use_process
+		self._streaming = False
 
 	def attach(self, observer):
 		""" Attach an observer.
@@ -80,6 +83,14 @@ class Stream(Thread):
 				for observer in self._observers:
 					observer(Message(campfire, message))
 
+	def is_streaming(self):
+		""" Tell if streaming is in progress.
+
+		Returns:
+			bool. Success
+		"""
+		return self._streaming
+
 	def stop(self):
 		""" Stop streaming.
 
@@ -114,33 +125,35 @@ class Stream(Thread):
 			process.set_queue(queue)
 			process.start()
 			if not process.is_alive():
-				self._abort = True
-		elif self._live:
-			process.fetch()
+				return
 
-		if self._live and not self._use_process:
-			return
+		self._streaming = True
 
 		while not self._abort:
 			if self._use_process:
+				if not process.is_alive():
+					self._abort = True
+					break
+
 				try:
 					self.incoming(queue.get_nowait())
 				except Empty:
 					time.sleep(0.5)
 					pass
 			else:
-				if not self._live:
-					process.fetch()
+				process.fetch()
 				time.sleep(self._pause)
+
+		self._streaming = False
+		if self._use_process and self._abort and not process.is_alive() and self._error_callback:
+			self._error_callback(Exception("Streaming process was killed"))
 
 		if self._use_process:
 			queue.close()
 			if process.is_alive():
 				process.stop()
 				process.terminate()
-				process.join()
-		elif self._live:
-			process.stop()
+			process.join()
 
 class StreamProcess(Process, basic.LineOnlyReceiver):
 	""" Separate process implementation to get messages """
