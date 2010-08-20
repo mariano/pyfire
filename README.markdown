@@ -7,17 +7,9 @@ of the [Campfire API] [api] in Python.
 
 ### Requirements ###
 
-Pyfire requires [Chris AtLee's Poster package] [poster] to be installed.
-
-1. Download the [latest Poster package] [poster-download]
-2. Unzip the downloaded file, and run the following command from within the
-created directory:
-
-		$ python setup.py install
-
-Pyfire also uses [Twisted] [twisted] (version 10.1.0 or greater) for live
-streaming. The [Twisted download page] [twisted-download] shows how to install
-Twisted on several platforms. 
+Pyfire requires [Twisted] [twisted] (version 10.1.0 or greater.) The 
+[Twisted download page] [twisted-download] shows how to install Twisted on 
+several platforms. 
 
 For Ubuntu based systems, Twisted is on the official repositories, and can be
 installed the following way:
@@ -63,24 +55,35 @@ post that message in the room, and then leave the room.
 ### Uploading a file to a room ###
 
 This example shows us how to upload a file to a room. The upload takes place in
-a separate thread, so you should always use join() to wait for the thread to 
-complete before finishing your application.
+a separate thread that spawns a separate process, so you should always use join()
+to wait for the thread to complete before finishing your application.
 
-Also in this example, you can see the use of a callback function to keep a
-progress report of the upload.
+Also in this example, you can see the use of callback functions to keep a
+progress report of the upload, inform when the upload finished, or errored out.
 
 NOTE: We did not join the room to post an upload, since it is not a requirement.
 
 	import pyfire
 
-	def progress(parameter, current, total):
+	def progress(current, total):
 		print("Uploading %d out of %d (%-.1f%%)" % (current, total, 100 * (float(current) / float(total))))
+
+	def finished():
+		print("Upload succeeded!")
+
+	def error(e):
+		print("ERROR while uploading: %s" % e)
 
 	campfire = pyfire.Campfire("SUBDOMAIN", "USERNAME", "PASSWORD", ssl=True)
 	room = campfire.get_room_by_name("My Room")
-	upload = room.upload("/tmp/myfile.tar.gz", listener=progress)
-	print "Starting upload of %s" % path
+	upload = room.upload(
+		"/tmp/myfile.tar.gz",
+		progress_callback = progress,
+		finished_callback = finished,
+		error_callback = error
+	)
 	upload.start()
+	print ("Started upload of %s" % path)
 	upload.join()
 
 ### Streaming a room ###

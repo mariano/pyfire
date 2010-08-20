@@ -122,7 +122,6 @@ class Stream(Thread):
 			return
 
 		while not self._abort:
-			messages = None
 			if self._use_process:
 				try:
 					self.incoming(queue.get_nowait())
@@ -143,7 +142,7 @@ class Stream(Thread):
 		elif self._live:
 			process.stop()
 
-class StreamProcess(Process, basic.LineReceiver):
+class StreamProcess(Process, basic.LineOnlyReceiver):
 	""" Separate process implementation to get messages """
 	
 	delimiter = '\r'

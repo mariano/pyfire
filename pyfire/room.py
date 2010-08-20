@@ -4,6 +4,7 @@ from .connection import Connection
 from .entity import CampfireEntity
 from .message import Message
 from .stream import Stream
+from .upload import Upload
 
 class Room(CampfireEntity):
 	""" Campfire room """
@@ -21,18 +22,13 @@ class Room(CampfireEntity):
 	def _load(self, id=None):
 		self.set_data(self._connection.get("room/%s" % (id or self.id)))
 
-	def get_stream(self, live=True):
+	def get_stream(self):
 		""" Get room stream to listen for messages.
-
-		Kwargs:
-			live (bool): If True, issue a live stream, otherwise an offline stream
 
 		Returns:
 			:class:`Stream`. Stream
 		"""
-		if live:
-			self.join()
-		return Stream(self, live=live)
+		return Stream(self)
 
 	def get_uploads(self):
 		""" Get list of recent uploads.
@@ -139,7 +135,7 @@ class Room(CampfireEntity):
 		"""
 		return self._connection.post("room/%s/unlock" % self.id)["success"]
 
-	def upload(self, path, listener=None):
+	def upload(self, path, progress_callback=None, finished_callback=None, error_callback=None):
 		""" Create a new thread to upload a file (thread should be
 		then started with start() to perform upload.)
 
@@ -147,51 +143,17 @@ class Room(CampfireEntity):
 			path (str): Path to file
 
 		Kwargs:
-			listener (func): Callback to call as file is uploaded (parameters: parameter, current, total)
+			progress_callback (func): Callback to call as file is uploaded (parameters: current, total)
+			finished_callback (func): Callback to call when upload is finished
+			error_callback (func): Callback to call when an error occurred (parameters: exception)
 
 		Returns:
 			:class:`Upload`. Upload thread
 		"""
-		return Upload(self, path, listener=listener)
-
-class Upload(Thread):
-	""" A live stream to a room in a separate thread """
-	
-	def __init__(self, room, path, listener=None):
-		""" Initialize.
-
-		Args:
-			room (:class:`Room`): Room where we are uploading
-			path (str): Path to file
-
-		Kwargs:
-			listener (func): Callback
-		"""
-		Thread.__init__(self)
-
-		settings = room.get_campfire().get_connection().get_settings()
-		self._path = path
-		self._connection = Connection.create_from_settings(settings)
-		self._room = room
-		self._listener = listener
-
-	def run(self):
-		""" Called by the thread, it runs the process.
-
-		NEVER call this method directly. Instead call start() to start the thread.
-
-		Before finishing the thread using this thread, call join()
-		"""
-		file_handle = open(self._path, "r")
-
-		try:
-			result = self._connection.post(
-				"room/%s/uploads" % self._room.id, 
-				{"upload": file_handle},
-				listener=self._listener
-			)
-		except:
-			raise
-		finally:
-			file_handle.close()
-
+		return Upload(
+			self,
+			{"upload": path},
+			progress_callback = progress_callback,
+			finished_callback = finished_callback,
+			error_callback = error_callback
+		)
