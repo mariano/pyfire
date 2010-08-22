@@ -31,6 +31,7 @@ class Room(CampfireEntity):
 		Returns:
 			:class:`Stream`. Stream
 		"""
+		self.join()
 		return Stream(self, error_callback=error_callback)
 
 	def get_uploads(self):

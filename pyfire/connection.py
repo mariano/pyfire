@@ -12,8 +12,6 @@ from twisted.protocols import basic
 from twisted.web import client
 from twisted.web import http_headers
 
-import poster
-
 class ConnectionError(Exception):
 	pass
 
@@ -49,6 +47,15 @@ class RESTRequest(urllib2.Request, object):
 			str. The method (GET/POST/PUT/DELETE/etc.)
 		"""
 		return self._method or urllib2.Request.get_method(self)
+
+class HTTPBasicAuthHandler(urllib2.HTTPBasicAuthHandler, object):
+	maximum_retries = 2
+	_retries = 0
+	def retry_http_basic_auth(self, host, req, realm):
+		self._retries += 1
+		if self._retries == self.maximum_retries:
+			raise urllib2.HTTPError(req.get_full_url(), 401, "digest auth failed", req.headers, None)
+		return super(HTTPBasicAuthHandler, self).retry_http_basic_auth(host, req, realm)
 
 class Connection(object):
 	""" A connection to the Campfire API """
@@ -307,29 +314,16 @@ class Connection(object):
 		Raises:
 			AuthenticationError, ConnectionError, urllib2.HTTPError, ValueError
 		"""
-		has_file = False
-		if post_data is not None and isinstance(post_data, dict):
-			for key in post_data:
-				if hasattr(post_data[key], "read"):
-					has_file = True
-					break
 
 		headers = self.get_headers()
-		if not has_file:
-			headers["Content-Type"] = "application/json"
+		headers["Content-Type"] = "application/json"
 
 		handlers = []
 		debuglevel = int(self._settings["debug"])
 	
-		if has_file:
-			handlers.append(poster.streaminghttp.StreamingHTTPHandler(debuglevel=debuglevel))
-			handlers.append(poster.streaminghttp.StreamingHTTPRedirectHandler())
-			if hasattr(httplib, "HTTPS"):
-				handlers.append(poster.streaminghttp.StreamingHTTPSHandler(debuglevel=debuglevel))
-		else:
-			handlers.append(urllib2.HTTPHandler(debuglevel=debuglevel))
-			if hasattr(httplib, "HTTPS"):
-				handlers.append(urllib2.HTTPSHandler(debuglevel=debuglevel))
+		handlers.append(urllib2.HTTPHandler(debuglevel=debuglevel))
+		if hasattr(httplib, "HTTPS"):
+			handlers.append(urllib2.HTTPSHandler(debuglevel=debuglevel))
 
 		handlers.append(urllib2.HTTPCookieProcessor(cookielib.CookieJar()))
 
@@ -337,19 +331,12 @@ class Connection(object):
 		if password_url and "Authorization" not in headers:
 			pwd_manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
 			pwd_manager.add_password(None, password_url, self._settings["user"], self._settings["password"])
-			if has_file:
-				handlers.append(poster.streaminghttp.StreamingHTTPBasicAuthHandler(pwd_manager))
-			else:
-				handlers.append(urllib2.HTTPBasicAuthHandler(pwd_manager))
+			handlers.append(HTTPBasicAuthHandler(pwd_manager))
 
 		opener = urllib2.build_opener(*handlers)
 
 		if post_data is not None:
-			if has_file:
-				post_data, file_headers = poster.encode.multipart_encode(post_data, cb=listener)
-				headers.update(file_headers)
-			elif isinstance(post_data, dict):
-				post_data = json.dumps(post_data)
+			post_data = json.dumps(post_data)
 
 		uri = self._url(url, parameters)
 		request = RESTRequest(uri, method=method, headers=headers)
