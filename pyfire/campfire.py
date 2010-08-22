@@ -1,3 +1,5 @@
+import operator
+
 from .connection import Connection
 from .user import User
 from .room import Room
@@ -43,13 +45,18 @@ class Campfire(object):
 		"""
 		return self._connection
 	
-	def get_rooms(self):
+	def get_rooms(self, sort=True):
 		""" Get rooms list
 
+		Kwargs:
+			sort (bool): If True, sort rooms by name
 		Returns:
 			array. List of rooms (each room is a dict)
 		"""
-		return self._connection.get("rooms")
+		rooms = self._connection.get("rooms")
+		if sort:
+			rooms.sort(key=operator.itemgetter("name"))
+		return rooms
 
 	def get_room_by_name(self, name):
 		""" Get a room by name.
