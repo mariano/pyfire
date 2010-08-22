@@ -54,7 +54,7 @@ class HTTPBasicAuthHandler(urllib2.HTTPBasicAuthHandler, object):
 	def retry_http_basic_auth(self, host, req, realm):
 		self._retries += 1
 		if self._retries == self.maximum_retries:
-			raise urllib2.HTTPError(req.get_full_url(), 401, "digest auth failed", req.headers, None)
+			raise urllib2.HTTPError(req.get_full_url(), 401, "basic auth failed", req.headers, None)
 		return super(HTTPBasicAuthHandler, self).retry_http_basic_auth(host, req, realm)
 
 class Connection(object):
