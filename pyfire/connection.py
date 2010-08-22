@@ -255,7 +255,7 @@ class Connection(object):
 		try:
 			data = json.loads(text)
 		except ValueError as e:
-			raise ValueError("%s in %s: Value: [%s]" % (e, uri, text))
+			raise ValueError("%s: Value: [%s]" % (e, text))
 
 		if data and key:
 			if key not in data:
