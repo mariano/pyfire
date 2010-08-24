@@ -59,11 +59,16 @@ class Message(CampfireEntity):
 			else:
 				matches = re.match("^---\s*:author_username:\s*(.+?)\s*:message: (.+)\s*:author_avatar_url:\s*.+?\s*:id:\s*(\d+)\s*$", self.body)
 				if matches and matches.group(2):
+					body = matches.group(2)
+					if re.match("^\".+\"$", body):
+						body = body[1:-1]
 					self.tweet = {
-						"tweet": matches.group(2)[1:-1],
+						"tweet": body,
 						"user": matches.group(1),
 						"url": "http://twitter.com/%s/status/%s" % (matches.group(1), matches.group(3))
 					}
+			if not matches:
+				self.type = self._TYPE_TEXT
 
 	def is_joining(self):
 		""" Tells if this message is a room join message.
