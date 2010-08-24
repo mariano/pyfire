@@ -22,6 +22,6 @@ in Python.""",
 	license='MIT',
 	include_package_data=True,
 	zip_safe=True,
-	packages=['pyfire'],
+	packages=['pyfire', 'pyfire/twistedx'],
 	requires=['twisted (>=10.1.0)']
 )
