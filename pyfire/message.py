@@ -57,18 +57,21 @@ class Message(CampfireEntity):
 					"url": matches.group(3)
 				}
 			else:
-				matches = re.match("^---\s*:author_username:\s*(.+?)\s*:message: (.+)\s*:author_avatar_url:\s*.+?\s*:id:\s*(\d+)\s*$", self.body)
-				if matches and matches.group(2):
-					body = matches.group(2)
-					if re.match("^\".+\"$", body):
-						body = body[1:-1]
+				tweet_data = {}
+				if re.match("^---", self.body):
+					for line in self.body.split("\n")[1:]:
+						matches = re.match('^:([^:]+):\s*"?(.+)"?$', line)
+						if matches:
+							tweet_data[matches.group(1)] = matches.group(2)
+	
+				if tweet_data and "author_username" in tweet_data and "message" in tweet_data and "id" in tweet_data:
 					self.tweet = {
-						"tweet": body,
-						"user": matches.group(1),
-						"url": "http://twitter.com/%s/status/%s" % (matches.group(1), matches.group(3))
+						"tweet": tweet_data["message"],
+						"user": tweet_data["author_username"],
+						"url": "http://twitter.com/%s/status/%s" % (tweet_data["author_username"], tweet_data["id"])
 					}
-			if not matches:
-				self.type = self._TYPE_TEXT
+				else:
+					self.type = self._TYPE_TEXT
 
 	def is_joining(self):
 		""" Tells if this message is a room join message.
