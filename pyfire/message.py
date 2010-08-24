@@ -23,8 +23,13 @@ class Message(CampfireEntity):
 			data (dict or str): If string, message type will be set to either paste or text
 		"""
 		if type(data) == types.StringType:
+			messageType = self._TYPE_PASTE if data.find("\n") >= 0 else self._TYPE_TEXT
+			if messageType == self._TYPE_TEXT:
+				matches = re.match("^https?://(www\.)?twitter\.com/([^/]+)/status/(\d+)", data)
+				if matches:
+					messageType = self._TYPE_TWEET
 			data = {
-				"type": self._TYPE_PASTE if data.find("\n") >= 0 else self._TYPE_TEXT,
+				"type": messageType,
 				"body": data
 			}
 
@@ -43,6 +48,7 @@ class Message(CampfireEntity):
 					del self.upload["full_url"]
 
 		if self.is_tweet():
+			# Tweet formats may be different if the streaming is line, or transcript based (I know, I know...)
 			matches = re.match("(.+)\s+--\s+@([^,]+),\s*(.+)$", self.body)
 			if matches:
 				self.tweet = {
@@ -50,6 +56,14 @@ class Message(CampfireEntity):
 					"user": matches.group(2),
 					"url": matches.group(3)
 				}
+			else:
+				matches = re.match("^---\s*:author_username:\s*(.+?)\s*:message: (.+)\s*:author_avatar_url:\s*.+?\s*:id:\s*(\d+)\s*$", self.body)
+				if matches and matches.group(2):
+					self.tweet = {
+						"tweet": matches.group(2)[1:-1],
+						"user": matches.group(1),
+						"url": "http://twitter.com/%s/status/%s" % (matches.group(1), matches.group(3))
+					}
 
 	def is_joining(self):
 		""" Tells if this message is a room join message.
