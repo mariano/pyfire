@@ -1,3 +1,5 @@
+import operator
+
 from threading import Thread
 
 from .connection import Connection
@@ -43,13 +45,18 @@ class Room(CampfireEntity):
 		"""
 		return self._connection.get("room/%s/uploads" % self.id, key="uploads")
 
-	def get_users(self):
+	def get_users(self, sort=True):
 		""" Get list of users in the room.
+
+		Kwargs:
+			sort (bool): If True, sort rooms by name
 
 		Returns:
 			array. List of users
 		"""
 		self._load()
+		if sort:
+			self.users.sort(key=operator.itemgetter("name"))
 		return self.users
 
 	def join(self):

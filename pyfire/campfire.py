@@ -50,6 +50,7 @@ class Campfire(object):
 
 		Kwargs:
 			sort (bool): If True, sort rooms by name
+
 		Returns:
 			array. List of rooms (each room is a dict)
 		"""
