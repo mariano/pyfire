@@ -1,6 +1,8 @@
 import operator
+import urllib
 
 from .connection import Connection
+from .message import Message
 from .user import User
 from .room import Room
 
@@ -46,7 +48,7 @@ class Campfire(object):
 		return self._connection
 	
 	def get_rooms(self, sort=True):
-		""" Get rooms list
+		""" Get rooms list.
 
 		Kwargs:
 			sort (bool): If True, sort rooms by name
@@ -75,7 +77,7 @@ class Campfire(object):
 		raise RoomNotFoundException("Room %s not found" % name)
 
 	def get_room(self, id):
-		""" Get room
+		""" Get room.
 
 		Returns:
 			:class:`Room`. Room
@@ -85,7 +87,7 @@ class Campfire(object):
 		return self._rooms[id]
 
 	def get_user(self, id = None):
-		""" Get user
+		""" Get user.
 
 		Returns:
 			:class:`User`. User
@@ -97,3 +99,18 @@ class Campfire(object):
 			self._users[id] = self._user if id == self._user.id else User(self, id)
 
 		return self._users[id]
+
+	def search(self, terms):
+		""" Search transcripts.
+
+		Args:
+			terms (str): Terms for search
+
+		Returns:
+			array. Messages
+		"""
+		messages = self._connection.get("search/%s" % urllib.quote_plus(terms), key="messages")
+		if messages:
+			messages = [Message(self, message) for message in messages]
+		return messages
+

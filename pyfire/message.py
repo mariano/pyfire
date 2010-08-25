@@ -73,6 +73,14 @@ class Message(CampfireEntity):
 				else:
 					self.type = self._TYPE_TEXT
 
+	def is_by_current_user(self):
+		""" Tells if this message was written by the current user.
+
+		Returns:
+			bool. Success
+		"""
+		return self.user.id == self._campfire.get_user().id
+
 	def is_joining(self):
 		""" Tells if this message is a room join message.
 

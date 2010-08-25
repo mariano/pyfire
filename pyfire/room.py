@@ -83,6 +83,26 @@ class Room(CampfireEntity):
 		"""
 		return self._connection.post("room/%s/lock" % self.id)["success"]
 
+	def recent(self, message_id=None, limit=None):
+		""" Recent messages.
+
+		Kwargs:
+			message_id (int): If specified, return messages since the specified message ID
+			limit (int): If specified, limit the number of messages
+
+		Returns:
+			array. Messages
+		"""
+		parameters = {}
+		if message_id:
+			parameters["since_message_id"] = message_id
+		if limit:
+			parameters["limit"] = limit
+		messages = self._connection.get("room/%s/recent" % self.id, key="messages", parameters=parameters)
+		if messages:
+			messages = [Message(self._campfire, message) for message in messages]
+		return messages
+
 	def set_name(self, name):
 		""" Set the room name.
 
@@ -138,6 +158,23 @@ class Room(CampfireEntity):
 		if result["success"]:
 			return Message(campfire, result["data"])
 		return result["success"]
+
+	def transcript(self, for_date=None):
+		""" Recent messages.
+
+		Kwargs:
+			for_date (date): If specified, get the transcript for this specific date
+
+		Returns:
+			array. Messages
+		"""
+		url = "room/%s/transcript" % self.id
+		if for_date:
+			url = "%s/%d/%d/%d" % (url, for_date.year, for_date.month, for_date.day)
+		messages = self._connection.get(url, key="messages")
+		if messages:
+			messages = [Message(self._campfire, message) for message in messages]
+		return messages
 
 	def unlock(self):
 		""" Unlock room.
