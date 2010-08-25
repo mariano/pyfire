@@ -79,6 +79,14 @@ class CampfireEntity(Entity):
 		"""
 		return self._connection
 
+	def set_connection(self, connection):
+		""" Set campfire connection.
+
+		Args:
+			connection (:class:`Connection`): Connection
+		"""
+		self._connection = connection
+	
 	def set_data(self, data={}, datetime_fields=[]):
 		""" Set entity data
 

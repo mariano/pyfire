@@ -12,32 +12,58 @@ class RoomNotFoundException(Exception):
 class Campfire(object):
 	""" Campfire API """
 	
-	def __init__(self, subdomain, user, password, ssl=False):
+	def __init__(self, subdomain, username, password, ssl=False, currentUser=None):
 		""" Initialize.
 
 		Args:
 			subdomain (str): Campfire subdomain
-			user (str): User
+			username (str): User
 			password (str): pasword
 
 		Kwargs:
 			ssl (bool): enabled status of SSL
+			currentUser (:class:`User`): If specified, don't auto load current user, use this one instead
 		"""
 		self.base_url = "http%s://%s.campfirenow.com" % ("s" if ssl else "", subdomain)
 		self._settings = {
-			"user": user,
-			"password": password
+			"subdomain": subdomain,
+			"username": username,
+			"password": password,
+			"ssl": ssl
 		}
-		self._user = None
+		self._user = currentUser
 		self._users = {}
 		self._rooms = {}
 
-		_connection = Connection(url="%s/users/me" % self.base_url, user=user, password=password)
-		user = _connection.get(key="user")
-		
-		self._connection = Connection(base_url=self.base_url, user=user["api_auth_token"], password="x")
-		self._user = User(self, user["id"], current=True)
-		self._user.token = user["api_auth_token"]
+		if not self._user:
+			_connection = Connection(url="%s/users/me" % self.base_url, user=username, password=password)
+			user = _connection.get(key="user")
+			
+		self._connection = Connection(
+			base_url=self.base_url, 
+			user=self._user.token if self._user else user["api_auth_token"], 
+			password="x"
+		)
+
+		if self._user:
+			self._user.set_connection(self._connection)
+		else:
+			self._user = User(self, user["id"], current=True)
+			self._user.token = user["api_auth_token"]
+
+	def __copy__(self):
+		""" Clone.
+
+		Returns:
+			:class:`Campfire`. Cloned instance
+		"""
+		return Campfire(
+			self._settings["subdomain"],
+			self._settings["username"],
+			self._settings["password"],
+			self._settings["ssl"],
+			self._user
+		)
 
 	def get_connection(self):
 		""" Get connection
