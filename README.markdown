@@ -103,9 +103,9 @@ process (by pressing ENTER).
 
 Inspired by the work of Lawrence Oluyede on [Pinder] [pinder], live streaming of
 a room is performed using the [Twisted] [twisted] module. This allows for real
-live streaming (rather than the transcript based streaming shown below). In
-order to stream a room, you first have to join it (Pyfire will automatically
-join the room for you, if you haven't)
+live streaming (rather than the transcript based streaming shown in the next
+example.) In order to stream a room, you first have to join it (Pyfire will 
+automatically join the room for you)
 
 The live stream will create a thread to process the incoming messages, and a
 child process to fetch the messages from the server. Make sure you wait for the
@@ -141,7 +141,7 @@ thread to finish (using join()) before ending your main process.
 	room = campfire.get_room_by_name("My Room")
 	room.join()
 	stream = room.get_stream(error_callback=error)
-	stream.attach(MessageListener.message).start()
+	stream.attach(incoming).start()
 	raw_input("Waiting for messages (Press ENTER to finish)\n")
 	stream.stop().join()
 	room.leave()
