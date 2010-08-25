@@ -1,3 +1,6 @@
+import datetime
+import re
+
 class Entity(object):
 	""" Dictionary based entity """
 	
@@ -75,3 +78,35 @@ class CampfireEntity(Entity):
 			:class:`Connection`. Connection
 		"""
 		return self._connection
+
+	def set_data(self, data={}, datetime_fields=[]):
+		""" Set entity data
+
+		Args:
+			data (dict): Entity data
+			datetime_fields (array): Fields that should be parsed as datetimes
+		"""
+		if datetime_fields:
+			for field in datetime_fields:
+				if field in data:
+					data[field] = self._parse_datetime(data[field])
+
+		super(CampfireEntity, self).set_data(data)
+
+	def _parse_datetime(self, value):
+		""" Parses a datetime string from "YYYY/MM/DD HH:MM:SS +HHMM" format
+
+		Args:
+			value (str): String
+
+		Returns:
+			datetime. Datetime
+		"""
+		offset = 0
+		pattern = r"\s+([+-]{1}\d+)\Z"
+		matches = re.search(pattern, value)
+		if matches:
+			value = re.sub(pattern, '', value)
+			offset = datetime.timedelta(hours=int(matches.group(1))/100)
+		return datetime.datetime.strptime(value, "%Y/%m/%d %H:%M:%S") - offset
+

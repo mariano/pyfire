@@ -22,7 +22,10 @@ class Room(CampfireEntity):
 		self._load(id)
 
 	def _load(self, id=None):
-		self.set_data(self._connection.get("room/%s" % (id or self.id)))
+		self.set_data(
+			self._connection.get("room/%s" % (id or self.id)),
+			["created_at", "updated_at"]
+		)
 
 	def get_stream(self, error_callback=None, live=True):
 		""" Get room stream to listen for messages.

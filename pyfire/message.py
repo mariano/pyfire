@@ -33,7 +33,10 @@ class Message(CampfireEntity):
 				"body": data
 			}
 
-		super(Message, self).__init__(campfire, data)
+		super(Message, self).__init__(campfire)
+
+		self.set_data(data, ["created_at"])
+		
 		self.user = None
 		self.room = None
 
