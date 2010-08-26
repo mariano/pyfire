@@ -3,6 +3,10 @@
 The goal of this package is to provide an easy to use implementation
 of the [Campfire API] [api] in Python.
 
+## LICENSE ##
+
+Pyfire is released under the [MIT License] [license].
+
 ## INSTALLATION ##
 
 ### Requirements ###
@@ -190,6 +194,7 @@ transcripts.
 	raw_input("|| Press ENTER to finish ||")
 	stream.stop().join()
 
+[license]: http://www.opensource.org/licenses/mit-license.php
 [api]: http://developer.37signals.com/campfire
 [poster]: http://atlee.ca/software/poster
 [poster-download]: http://atlee.ca/software/poster#download
