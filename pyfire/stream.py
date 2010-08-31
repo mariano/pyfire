@@ -390,7 +390,7 @@ class LiveStreamProtocol(basic.LineReceiver):
 		""" Process data.
 
 		Args:
-			raw (str): Incoming data
+			data (str): Incoming data
 		"""
 		if self._len_expected is not None:
 			data, extra = data[:self._len_expected], data[self._len_expected:]
