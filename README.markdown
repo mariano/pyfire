@@ -71,12 +71,15 @@ progress report of the upload, inform when the upload finished, or errored out.
 
 NOTE: We did not join the room to post an upload, since it is not a requirement.
 
-	import sys
 	import pyfire
 
 	def progress(current, total):
-		sys.stdout.write("\b" * 80)
-		sys.stdout.write("Uploading %d out of %d (%-.1f%%)" % (current, total, 100 * (float(current) / float(total))))
+		print("\b" * 80)
+		print("Uploading %d out of %d (%-.1f%%)" % (
+			current,
+			total,
+			100 * (float(current) / float(total))
+		))
 
 	def finished():
 		print("\nUpload Finished!")
