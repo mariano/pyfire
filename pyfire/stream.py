@@ -1,3 +1,4 @@
+import re
 import time
 
 from threading import Thread
@@ -399,12 +400,16 @@ class LiveStreamProtocol(basic.LineReceiver):
 
 		self._status_data += data
 		if self._status_size == 0:
-			if data.strip():
+			data = data.strip()
+			if data:
 				try:
-					message = self.factory.get_stream().get_connection().parse(data.strip())
-					if message:
-						self.factory.get_stream().received([message])
-				except ValueError:
+					match = re.search("[^{]*({.+})[^}]*", data)
+					if match:
+						data = match.group(1)
+						message = self.factory.get_stream().get_connection().parse(data)
+						if message:
+							self.factory.get_stream().received([message])
+				except ValueError as e:
 					pass
 			self.status_data = ""
 			self.status_size = None
