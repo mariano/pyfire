@@ -16,7 +16,7 @@ from .message import Message
 class Stream(Thread):
 	""" A live stream to a room in a separate thread """
 	
-	def __init__(self, room, live=True, error_callback=None, pause=1, use_process=True):
+	def __init__(self, room, live=True, error_callback=None, pause=None, use_process=True):
 		""" Initialize.
 
 		Args:
@@ -25,18 +25,21 @@ class Stream(Thread):
 		Kwargs:
 			live (bool): If True, issue a live stream, otherwise an offline stream
 			error_callback (func): A callback to call when an error occurs
-			pause (int): Pause in seconds between requests
+			pause (int): Pause in seconds between requests (if live==False), or pause
+						 between queue checks
 			use_process (bool): If True, use a separate process to fetch the messages
 
 		Raises:
 			AssertionError
 		"""
-		assert pause > 0, 'A pause of at least 1 second is needed'
+		if not live:
+			if live is None:
+				pause = 1
+			assert pause > 0, 'A pause of at least 1 second is needed'
+		elif pause is None:
+			pause = 0.25
 
 		Thread.__init__(self)
-
-		if pause < 1:
-			raise ValueError("A minimum pause of 1 second needs to be specified")
 
 		self._room = room
 		self._live = live
@@ -152,7 +155,7 @@ class Stream(Thread):
 						self._abort = True
 
 				except Empty:
-					time.sleep(0.5)
+					time.sleep(self._pause)
 					pass
 			else:
 				process.fetch()
