@@ -5,6 +5,8 @@ from multiprocessing import Process, Queue
 from Queue import Empty
 
 from twisted.internet import defer
+from twisted.internet import protocol
+from twisted.internet import ssl
 from twisted.protocols import basic
 
 from .connection import Connection
@@ -115,7 +117,11 @@ class Stream(Thread):
 
 		self._abort = False
 		campfire = self._room.get_campfire()
-		process = StreamProcess(campfire.get_connection().get_settings(), self._room.id, live=self._live, pause=self._pause)
+
+		if self._live:
+			process = LiveStreamProcess(campfire.get_connection().get_settings(), self._room.id)
+		else:
+			process = StreamProcess(campfire.get_connection().get_settings(), self._room.id, pause=self._pause)
 
 		if not self._use_process:
 			process.set_callback(self.incoming)
@@ -136,7 +142,14 @@ class Stream(Thread):
 					break
 
 				try:
-					self.incoming(queue.get_nowait())
+					incoming = queue.get_nowait()
+					if isinstance(incoming, list):
+						self.incoming(incoming)
+					elif isinstance(incoming, Exception):
+						if self._error_callback:
+							self._error_callback(incoming)
+						self._abort = True
+
 				except Empty:
 					time.sleep(0.5)
 					pass
@@ -155,12 +168,10 @@ class Stream(Thread):
 				process.terminate()
 			process.join()
 
-class StreamProcess(Process, basic.LineOnlyReceiver):
+class StreamProcess(Process):
 	""" Separate process implementation to get messages """
 	
-	delimiter = '\r'
-	
-	def __init__(self, settings, room_id, live=True, pause=1):
+	def __init__(self, settings, room_id, pause=1):
 		""" Initialize.
 
 		Args:
@@ -168,19 +179,23 @@ class StreamProcess(Process, basic.LineOnlyReceiver):
 			room_id (int): Room ID
 
 		Kwargs:
-			live (bool): If True, issue a live stream, otherwise an offline stream
-			callback (func): Called when new messages arrive
 			pause (int): Pause in seconds between requests
 		"""
 		Process.__init__(self)
-		self._live = live
 		self._pause = pause
 		self._room_id = room_id
 		self._callback = None
 		self._queue = None
-		self._reactor = None
 		self._connection = Connection.create_from_settings(settings)
 		self._last_message_id = None
+
+	def get_room_id(self):
+		""" Get room ID.
+
+		Returns:
+			int. Room ID
+		"""
+		return self._room_id
 	
 	def set_callback(self, callback):
 		""" Set callback.
@@ -209,44 +224,29 @@ class StreamProcess(Process, basic.LineOnlyReceiver):
 		if not self._queue:
 			raise Exception("No queue available to send messages")
 
-		if self._live:
+		while True:
 			self.fetch()
-		else:
-			while True:
-				self.fetch()
-				time.sleep(self._pause)
+			time.sleep(self._pause)
 
 	def fetch(self):
 		""" Fetch new messages. """
-		if self._live:
-			url = 'https://streaming.campfirenow.com/room/%s/live.json' % self._room_id
+		try:
+			if not self._last_message_id:
+				messages = self._connection.get("room/%s/transcript" % self._room_id, key="messages")
+			else:
+				messages = self._connection.get("room/%s/recent" % self._room_id, key="messages", parameters={
+					"since_message_id": self._last_message_id
+				})
+		except:
+			messages = []
 
-			self._reactor, request = self._connection.build_twisted_request("GET", url, full_url=True)
+		if messages:
+			self._last_message_id = messages[-1]["id"]
 
-			request.addCallback(self._twisted_response)
-			request.addErrback(self._twisted_shutdown)
-
-			self._reactor.run()
-		else:
-			try:
-				if not self._last_message_id:
-					messages = self._connection.get("room/%s/transcript" % self._room_id, key="messages")
-				else:
-					messages = self._connection.get("room/%s/recent" % self._room_id, key="messages", parameters={
-						"since_message_id": self._last_message_id
-					})
-			except:
-				messages = []
-
-			if messages:
-				self._last_message_id = messages[-1]["id"]
-
-			self.received(messages)
+		self.received(messages)
 
 	def stop(self):
-		""" Stop streaming (only applicable when self._live is True) """
-		if self._live and self._reactor and self._reactor.running:
-			self._reactor.stop()
+		pass
 
 	def received(self, messages):
 		""" Called when new messages arrive.
@@ -261,26 +261,100 @@ class StreamProcess(Process, basic.LineOnlyReceiver):
 			if self._callback:
 				self._callback(messages)
 
-	def _twisted_response(self, response):
-		""" Called issued by twisted when response arrives.
+class LiveStreamProcess(StreamProcess):
+	""" Separate process implementation to get messages """
+	
+	def __init__(self, settings, room_id):
+		""" Initialize.
 
 		Args:
-			response (:class:`twisted.web.client.Response`): Response
+			settings (dict): Settings used to create a :class:`Connection` instance
+			room_id (int): Room ID
+		"""
+		StreamProcess.__init__(self, settings, room_id)
+		self._reactor = self._connection.get_twisted_reactor()
+		self._protocol = None
+
+	def get_connection(self):
+		""" Get connection
 
 		Returns:
-			:class:(`twisted.internet.defer`). Deferred
+			:class:`Connection`. Connection
 		"""
-		response.deliverBody(self)
-		return defer.Deferred()
-	
-	def _twisted_shutdown(self, reason):
-		""" Called issued by twisted when shutting down.
+		return self._connection
+
+	def set_protocol(self, protocol):
+		""" Set protocol.
 
 		Args:
-			reason: Reason
+			:class:`LiveStreamProtocol`: Protocol
 		"""
+		self._protocol = protocol
+
+	def run(self):
+		""" Called by the process, it runs it.
+
+		NEVER call this method directly. Instead call start() to start the separate process.
+		If you don't want to use a second process, then call fetch() directly on this istance.
+
+		To stop, call terminate()
+		"""
+		if not self._queue:
+			raise Exception("No queue available to send messages")
+
+		factory = LiveStreamFactory(self)
+		self._reactor.connectSSL("streaming.campfirenow.com", 443, factory, ssl.ClientContextFactory())
+		self._reactor.run()
+
+	def stop(self):
+		""" Stop streaming """
+		
+		if self._protocol:
+			self._protocol.factory.continueTrying = 0
+			self._protocol.transport.loseConnection()
+
 		if self._reactor and self._reactor.running:
 			self._reactor.stop()
+
+	def connected(self):
+		""" Callback when a connection is made. """
+		pass
+
+	def disconnected(self, reason):
+		""" Callback when an attempt to connect failed, or when connection is dropped.
+
+		Args:
+			reason (Exception): Exception
+		"""
+		self._queue.put(reason)
+
+class LiveStreamProtocol(basic.LineReceiver):
+	""" Protocol for live stream """
+	
+	delimiter = "\r\n"
+
+	def __init__(self):
+		""" Constructor. """
+		self._in_header = True
+		self._headers = []
+		self._status_size = None
+		self._status_data = ""
+	
+	def connectionMade(self):
+		""" Called when a connection is made, and used to send out headers """
+
+		headers = [
+			"GET %s HTTP/1.1" % ("/room/%s/live.json" % self.factory.get_stream().get_room_id())
+		]
+
+		connection_headers = self.factory.get_stream().get_connection().get_headers()
+		for header in connection_headers:
+			headers.append("%s: %s" % (header, connection_headers[header]))
+
+		headers.append("Host: streaming.campfirenow.com")
+
+		self.transport.write("\r\n".join(headers) + "\r\n\r\n")
+		self.factory.get_stream().set_protocol(self)
 
 	def lineReceived(self, line):
 		""" Callback issued by twisted when new line arrives.
@@ -288,14 +362,70 @@ class StreamProcess(Process, basic.LineOnlyReceiver):
 		Args:
 			line (str): Incoming line
 		"""
-		message = self._connection.parse(line)
-		if message:
-			self.received([message])
+		while self._in_header:
+			if line:
+				self._headers.append(line)
+			else:
+				http, status, message = self._headers[0].split(" ", 2)
+				status = int(status)
+				if status == 200:
+					self.factory.get_stream().connected()
+				else:
+					self.factory.continueTrying = 0
+					self.transport.loseConnection()
+					self.factory.get_stream().disconnected(RuntimeError(status, message))
+					return
 
-	def connectionLost(self, reason):
-		""" Callback isued by twisted when connection is lost.
+				self._in_header = False
+			break
+		else:
+			try:
+				self._status_size = int(line, 16)
+				self.setRawMode()
+			except:
+				pass
+
+	def rawDataReceived(self, data):
+		""" Process data.
 
 		Args:
-			reason (Exception): reason
+			data (str): Incoming data
 		"""
-		pass
+		if self._status_size is not None:
+			data, extra = data[:self._status_size], data[self._status_size:]
+			self._status_size -= len(data)
+		else:
+			extra = ""
+
+		self._status_data += data
+		if self._status_size == 0:
+			if data.strip():
+				try:
+					message = self.factory.get_stream().get_connection().parse(data.strip())
+					if message:
+						self.factory.get_stream().received([message])
+				except ValueError:
+					pass
+			self.status_data = ""
+			self.status_size = None
+			self.setLineMode(extra)
+
+class LiveStreamFactory(protocol.ReconnectingClientFactory):
+	maxDelay = 120
+	protocol = LiveStreamProtocol
+
+	def __init__(self, stream):
+		""" Initialize.
+
+		Args:
+			stream (:class:`LiveStreamProcess`): process receiving messages
+		"""
+		self._stream = stream
+
+	def get_stream(self):
+		""" Get stream.
+
+		Returns:
+			stream (:class:`LiveStreamProcess`): process receiving messages
+		"""
+		return self._stream

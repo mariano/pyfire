@@ -263,6 +263,14 @@ class Connection(object):
 			data = data[key]
 		return data
 
+	def get_twisted_reactor(self):
+		""" Get twisted's reactor
+
+		Returns:
+			reactor. Reactor
+		"""
+		return reactor
+
 	def build_twisted_request(self, method, url, extra_headers={}, body_producer=None, full_url=False):
 		""" Build a request for twisted
 
