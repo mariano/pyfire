@@ -338,8 +338,8 @@ class LiveStreamProtocol(basic.LineReceiver):
 		""" Constructor. """
 		self._in_header = True
 		self._headers = []
-		self._status_size = None
-		self._status_data = ""
+		self._len_expected = None
+		self._buffer = ""
 	
 	def connectionMade(self):
 		""" Called when a connection is made, and used to send out headers """
@@ -381,7 +381,7 @@ class LiveStreamProtocol(basic.LineReceiver):
 			break
 		else:
 			try:
-				self._status_size = int(line, 16)
+				self._len_expected = int(line, 16)
 				self.setRawMode()
 			except:
 				pass
@@ -390,29 +390,29 @@ class LiveStreamProtocol(basic.LineReceiver):
 		""" Process data.
 
 		Args:
-			data (str): Incoming data
+			raw (str): Incoming data
 		"""
-		if self._status_size is not None:
-			data, extra = data[:self._status_size], data[self._status_size:]
-			self._status_size -= len(data)
+		if self._len_expected is not None:
+			data, extra = data[:self._len_expected], data[self._len_expected:]
+			self._len_expected -= len(data)
 		else:
 			extra = ""
 
-		self._status_data += data
-		if self._status_size == 0:
-			data = data.strip()
+		self._buffer += data
+		if self._len_expected == 0:
+			data = self._buffer.strip()
 			if data:
-				try:
-					match = re.search("[^{]*({.+})[^}]*", data)
-					if match:
-						data = match.group(1)
-						message = self.factory.get_stream().get_connection().parse(data)
-						if message:
+				lines = data.split("\r")
+				for line in lines:
+					message = self.factory.get_stream().get_connection().parse(line)
+					if message:
+						try:
 							self.factory.get_stream().received([message])
-				except ValueError as e:
-					pass
-			self.status_data = ""
-			self.status_size = None
+						except ValueError:
+							pass
+
+			self._buffer = ""
+			self._len_expected = None
 			self.setLineMode(extra)
 
 class LiveStreamFactory(protocol.ReconnectingClientFactory):
