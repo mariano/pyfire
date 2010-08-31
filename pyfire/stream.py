@@ -404,12 +404,12 @@ class LiveStreamProtocol(basic.LineReceiver):
 			if data:
 				lines = data.split("\r")
 				for line in lines:
-					message = self.factory.get_stream().get_connection().parse(line)
-					if message:
-						try:
+					try:
+						message = self.factory.get_stream().get_connection().parse(line)
+						if message:
 							self.factory.get_stream().received([message])
-						except ValueError:
-							pass
+					except ValueError:
+						pass
 
 			self._buffer = ""
 			self._len_expected = None
