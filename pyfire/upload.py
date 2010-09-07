@@ -83,7 +83,7 @@ class Upload(Thread):
 
 			messages = None
 			try:
-				data = queue.get_nowait()
+				data = queue.get()
 				if not data:
 					done = True
 					if self._finished_callback:
@@ -193,7 +193,7 @@ class UploadProcess(Process):
 
 	def _response_finished(self, data):
 		self._reactor.stop()
-		self._queue.put_nowait(None)
+		self._queue.put(None)
 
 	def _response_error(self, data):
 		self._reactor.stop()
