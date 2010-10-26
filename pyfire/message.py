@@ -22,7 +22,8 @@ class Message(CampfireEntity):
 			campfire (:class:`Campfire`): Campfire instance
 			data (dict or str): If string, message type will be set to either paste or text
 		"""
-		if type(data) == types.StringType:
+		dataType = type(data)
+		if dataType == types.StringType or dataType == types.UnicodeType:
 			messageType = self._TYPE_PASTE if data.find("\n") >= 0 else self._TYPE_TEXT
 			if messageType == self._TYPE_TEXT:
 				matches = re.match("^https?://(www\.)?twitter\.com/([^/]+)/status/(\d+)", data)
@@ -30,7 +31,7 @@ class Message(CampfireEntity):
 					messageType = self._TYPE_TWEET
 			data = {
 				"type": messageType,
-				"body": unicode(data, "utf-8")
+				"body": data
 			}
 
 		super(Message, self).__init__(campfire)
