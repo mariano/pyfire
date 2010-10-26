@@ -30,7 +30,7 @@ class Message(CampfireEntity):
 					messageType = self._TYPE_TWEET
 			data = {
 				"type": messageType,
-				"body": data
+				"body": unicode(data, "utf-8")
 			}
 
 		super(Message, self).__init__(campfire)
