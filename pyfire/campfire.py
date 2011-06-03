@@ -98,7 +98,7 @@ class Campfire(object):
 		"""
 		rooms = self.get_rooms()
 		for room in rooms or []:
-			if room["name"].lower() == name.lower():
+			if room["name"] == name:
 				return self.get_room(room["id"])
 		raise RoomNotFoundException("Room %s not found" % name)
 
