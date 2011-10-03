@@ -29,7 +29,7 @@ class Upload(Thread):
         Thread.__init__(self)
 
         self._connection_settings = room.get_campfire().get_connection().get_settings()
-        self._room_id = room.id
+        self._room = room
         self._files = files
         self._data = data
         self._progress_callback = progress_callback
@@ -65,7 +65,7 @@ class Upload(Thread):
         Before finishing the thread using this thread, call join()
         """
         queue = Queue()
-        process = UploadProcess(self._connection_settings, self._room_id, queue, self._files)
+        process = UploadProcess(self._connection_settings, self._room.id, queue, self._files)
         if self._data:
             process.add_data(self._data)
         process.start()
@@ -95,13 +95,13 @@ class Upload(Thread):
                 else:
                     self._abort = True
                     if self._error_callback:
-                        self._error_callback(data)
+                        self._error_callback(data, self._room)
             except Empty:
                 time.sleep(0.5)
 
         self._uploading = False
         if self._abort and not process.is_alive() and self._error_callback:
-            self._error_callback(Exception("Upload process was killed"))
+            self._error_callback(Exception("Upload process was killed"), self._room)
 
         queue.close()
         if process.is_alive():
@@ -122,7 +122,7 @@ class UploadProcess(Process):
             files (dict): Dictionary, where key is the field name, and value is the path
         """
         Process.__init__(self)
-        self._room_id = room_id
+        self._room = room
         self._queue = queue
         self._files = files
         self._data = {}
@@ -172,7 +172,7 @@ class UploadProcess(Process):
 
         self._reactor, request = self._connection.build_twisted_request(
             "POST",
-            "room/%s/uploads" % self._room_id,
+            "room/%s/uploads" % self._room.id,
             extra_headers = headers,
             body_producer = self._producer
         )

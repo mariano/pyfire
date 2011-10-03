@@ -107,7 +107,7 @@ class Stream(Thread):
         """
         self._abort = True
         return self
-    
+   
     def run(self):
         """ Called by the thread, it runs the process.
 
@@ -150,9 +150,9 @@ class Stream(Thread):
                     if isinstance(incoming, list):
                         self.incoming(incoming)
                     elif isinstance(incoming, Exception):
-                        if self._error_callback:
-                            self._error_callback(incoming)
                         self._abort = True
+                        if self._error_callback:
+                            self._error_callback(incoming, self._room)
 
                 except Empty:
                     time.sleep(self._pause)
@@ -163,7 +163,7 @@ class Stream(Thread):
 
         self._streaming = False
         if self._use_process and self._abort and not process.is_alive() and self._error_callback:
-            self._error_callback(Exception("Streaming process was killed"))
+            self._error_callback(Exception("Streaming process was killed"), self._room)
 
         if self._use_process:
             queue.close()
