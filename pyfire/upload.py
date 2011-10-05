@@ -65,7 +65,7 @@ class Upload(Thread):
         Before finishing the thread using this thread, call join()
         """
         queue = Queue()
-        process = UploadProcess(self._connection_settings, self._room.id, queue, self._files)
+        process = UploadProcess(self._connection_settings, self._room, queue, self._files)
         if self._data:
             process.add_data(self._data)
         process.start()
@@ -112,12 +112,12 @@ class Upload(Thread):
 class UploadProcess(Process):
     """ Separate process implementation to upload files """
     
-    def __init__(self, settings, room_id, queue, files):
+    def __init__(self, settings, room, queue, files):
         """ Initialize.
 
         Args:
             settings (dict): Settings used to create a :class:`Connection` instance
-            room_id (int): Room ID
+            room (int): Room
             queue (:class:`multiprocessing.Queue`): Queue to share data between processes
             files (dict): Dictionary, where key is the field name, and value is the path
         """
