@@ -1,0 +1,14 @@
+Source: python-pyfire
+Section: python
+Priority: extra
+Maintainer: Zakaria Zajac <zak@madzak.com>
+Build-Depends: cdbs, debhelper (>= 7.0.50~), python-all-dev (>=2.6-7), python-support, python-setuptools
+Standards-Version: 3.9.1
+Homepage: https://github.com/mariano/pyfire
+
+Package: python-pyfire
+Architecture: any
+Depends: ${misc:Depends}, python-twisted, ${python:Depends}
+Description: Campfire API bindings for python
+ The goal of this package is to provide an easy to use 
+ implementation of the Campfire API in Python.
