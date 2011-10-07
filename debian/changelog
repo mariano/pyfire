@@ -1,0 +1,5 @@
+python-pyfire (0.3.2-ubuntu) natty; urgency=low
+
+  * Initial release (LP: #1234)  <nnnn is the bug number of your ITP>
+
+ -- Zakaria Zajac <zak@madzak.com>  Thu, 06 Oct 2011 23:02:55 -0700
