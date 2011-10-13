@@ -7,6 +7,7 @@ class Message(CampfireEntity):
     
     _TYPE_ENTER = "EnterMessage"
     _TYPE_LEAVE = "LeaveMessage"
+    _TYPE_KICK = "KickMessage"
     _TYPE_PASTE = "PasteMessage"
     _TYPE_SOUND = "SoundMessage"
     _TYPE_TEXT = "TextMessage"
@@ -92,6 +93,14 @@ class Message(CampfireEntity):
             bool. Success
         """
         return self.type == self._TYPE_ENTER
+
+    def is_kick(self):
+        """ Tells if this message is a room kick message.
+
+        Returns:
+            bool. Success
+        """
+        return self.type == self._TYPE_KICK
 
     def is_leaving(self):
         """ Tells if this message is a room leave message.
