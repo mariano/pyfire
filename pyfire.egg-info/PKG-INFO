@@ -1,0 +1,19 @@
+Metadata-Version: 1.1
+Name: pyfire
+Version: 0.3.2
+Summary: A Campfire API implementation in Python
+Home-page: https://github.com/mariano/pyfire
+Author: Mariano Iglesias
+Author-email: mgiglesias@gmail.com
+License: MIT
+Description: Pyfire provides an easy to use, full featured implementation of the Campfire API
+        in Python.
+Keywords: python campfire api
+Platform: UNKNOWN
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Natural Language :: English
+Classifier: Programming Language :: Python
+Classifier: Topic :: Internet :: WWW/HTTP
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Requires: twisted (>=10.1.0)
