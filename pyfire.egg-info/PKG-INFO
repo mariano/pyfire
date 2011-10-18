@@ -1,6 +1,6 @@
 Metadata-Version: 1.1
 Name: pyfire
-Version: 0.3.2
+Version: 0.3.3
 Summary: A Campfire API implementation in Python
 Home-page: https://github.com/mariano/pyfire
 Author: Mariano Iglesias
