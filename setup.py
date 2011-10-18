@@ -3,7 +3,7 @@
 from setuptools import setup
 
 setup(name='pyfire',
-    version="0.3.2",
+    version="0.3.3",
     description="A Campfire API implementation in Python",
     long_description="""\
 Pyfire provides an easy to use, full featured implementation of the Campfire API
