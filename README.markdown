@@ -11,6 +11,8 @@ Pyfire is released under the [MIT License] [license].
 
 ### Requirements ###
 
+#### Twisted ####
+
 Pyfire requires [Twisted] [twisted] (version 10.1.0 or greater.) The 
 [Twisted download page] [twisted-download] shows how to install Twisted on 
 several platforms. 
@@ -34,6 +36,19 @@ Twisted can be easily installed with:
 For *Arch Linux*, Twisted is in the extra repository and can be installed with:
 
 		$ pacman -S twisted
+
+#### PyOpenSSL ####
+
+For *Ubuntu/Debian based* systems, PyOpenSSL is in the official repositories, and can be
+installed the following way:
+
+		$ sudo apt-get install python-openssl
+
+For *Arch Linux*, PyOpenSSL is in the extra repository, and can be installed with:
+
+		$ pacman -S python2-pyopenssl
+
+Other OS should read [PyOpenSSL download page] [pyopenssl-download].
 
 ### Installing ###
 
@@ -207,4 +222,5 @@ transcripts.
 [poster-download]: http://atlee.ca/software/poster#download
 [twisted]: http://twistedmatrix.com
 [twisted-download]: http://twistedmatrix.com/trac/wiki/Downloads
+[pyopenssl-download]: http://pypi.python.org/pypi/pyOpenSSL
 [pinder]: http://github.com/rhymes/pinder
