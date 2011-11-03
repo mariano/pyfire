@@ -3,7 +3,7 @@
 from setuptools import setup
 
 setup(name='pyfire',
-    version="0.3.3",
+    version="0.3.4",
     description="A Campfire API implementation in Python",
     long_description="""\
 Pyfire provides an easy to use, full featured implementation of the Campfire API
@@ -24,5 +24,8 @@ in Python.""",
     include_package_data=True,
     zip_safe=True,
     packages=['pyfire', 'pyfire/twistedx'],
-    requires=['twisted (>=10.1.0)']
+    install_requires=[
+        'twisted>=10.1.0',
+        'pyOpenSSL'
+    ]
 )

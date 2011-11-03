@@ -11,6 +11,7 @@ pyfire/user.py
 pyfire.egg-info/PKG-INFO
 pyfire.egg-info/SOURCES.txt
 pyfire.egg-info/dependency_links.txt
+pyfire.egg-info/requires.txt
 pyfire.egg-info/top_level.txt
 pyfire.egg-info/zip-safe
 pyfire/twistedx/__init__.py
