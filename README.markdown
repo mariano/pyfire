@@ -33,6 +33,10 @@ Twisted can be easily installed with:
 
 		$ sudo apt-get install python-twisted
 
+For *Fedora*, Twisted is in the official repositories and can be installed with:
+
+		$ yum install python-twisted
+
 For *Arch Linux*, Twisted is in the extra repository and can be installed with:
 
 		$ pacman -S twisted
@@ -43,6 +47,10 @@ For *Ubuntu/Debian based* systems, PyOpenSSL is in the official repositories, an
 installed the following way:
 
 		$ sudo apt-get install python-openssl
+
+For *Fedora*, PyOpenSSL is in the official repositories and can be installed the following way:
+
+		$ yum install pyOpenSSL
 
 For *Arch Linux*, PyOpenSSL is in the extra repository, and can be installed with:
 
