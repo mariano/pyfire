@@ -9,7 +9,7 @@ Homepage: https://github.com/mariano/pyfire
 
 Package: python-pyfire
 Architecture: any
-Depends: ${misc:Depends}, python-twisted, ${python:Depends}
+Depends: ${misc:Depends}, python-twisted, python-openssl, ${python:Depends}
 Description: Campfire API bindings for python
  The goal of this package is to provide an easy to use 
  implementation of the Campfire API in Python.
