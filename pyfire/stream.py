@@ -15,7 +15,7 @@ from .message import Message
 
 class Stream(Thread):
     """ A live stream to a room in a separate thread """
-    
+
     def __init__(self, room, live=True, error_callback=None, pause=None, use_process=True):
         """ Initialize.
 
@@ -33,7 +33,7 @@ class Stream(Thread):
             AssertionError
         """
         if not live:
-            if live is None:
+            if pause is None:
                 pause = 1
             assert pause > 0, 'A pause of at least 1 second is needed'
         elif pause is None:
@@ -107,7 +107,7 @@ class Stream(Thread):
         """
         self._abort = True
         return self
-   
+
     def run(self):
         """ Called by the thread, it runs the process.
 
@@ -174,7 +174,7 @@ class Stream(Thread):
 
 class StreamProcess(Process):
     """ Separate process implementation to get messages """
-    
+
     def __init__(self, settings, room_id, pause=1):
         """ Initialize.
 
@@ -200,7 +200,7 @@ class StreamProcess(Process):
             int. Room ID
         """
         return self._room_id
-    
+
     def set_callback(self, callback):
         """ Set callback.
 
@@ -267,7 +267,7 @@ class StreamProcess(Process):
 
 class LiveStreamProcess(StreamProcess):
     """ Separate process implementation to get messages """
-    
+
     def __init__(self, settings, room_id):
         """ Initialize.
 
@@ -312,7 +312,7 @@ class LiveStreamProcess(StreamProcess):
 
     def stop(self):
         """ Stop streaming """
-        
+
         if self._protocol:
             self._protocol.factory.continueTrying = 0
             self._protocol.transport.loseConnection()
@@ -334,7 +334,7 @@ class LiveStreamProcess(StreamProcess):
 
 class LiveStreamProtocol(basic.LineReceiver):
     """ Protocol for live stream """
-    
+
     delimiter = "\r\n"
 
     def __init__(self):
@@ -343,7 +343,7 @@ class LiveStreamProtocol(basic.LineReceiver):
         self._headers = []
         self._len_expected = None
         self._buffer = ""
-    
+
     def connectionMade(self):
         """ Called when a connection is made, and used to send out headers """
 
