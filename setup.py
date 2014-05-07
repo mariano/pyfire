@@ -2,7 +2,7 @@
 
 from setuptools import setup
 
-setup(name='pyfire',
+setup(name='python-pyfire',
     version="0.3.4",
     description="A Campfire API implementation in Python",
     long_description="""\
